@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: marc
+      POSTGRES_PASSWORD: marc123
+      POSTGRES_DB: marcaromas
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    command: ["npm", "run", "dev"]
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgres://marc:marc123@db:5432/marcaromas
+      MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN}
+      PAYMENT_GATEWAY: mercadopago
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: trocar_por_um_segredo
+    depends_on:
+      - db
+
+volumes:
+  db-data:

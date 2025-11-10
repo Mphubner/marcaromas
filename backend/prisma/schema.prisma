@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  password      String
+  isAdmin       Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  orders        Order[]
+  subscriptions Subscription[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String?  @unique
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  image       String?
+  category    String?
+  createdAt   DateTime @default(now())
+
+  orderItems OrderItem[] // relação inversa
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Float
+  product   Product @relation(fields: [productId], references: [id])
+  order     Order   @relation(fields: [orderId], references: [id])
+}
+
+model Order {
+  id             Int         @id @default(autoincrement())
+  userId         Int?
+  total          Float
+  status         String      @default("pending")
+  mpPreferenceId String?
+  createdAt      DateTime    @default(now())
+  items          OrderItem[]
+  user           User?       @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  planId           String
+  mpSubscriptionId String?
+  status           String    @default("active")
+  startedAt        DateTime  @default(now())
+  nextBilling      DateTime?
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model Config {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}

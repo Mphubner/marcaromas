@@ -1,0 +1,20 @@
+Este arquivo diz ao Git o que IGNORAR.
+
+Arquivo de segredos locais
+
+.env
+.env.local
+
+Dependências (são milhões de arquivos)
+
+node_modules
+
+Build de produção (Vercel/Netlify criam isso sozinhas)
+
+dist
+
+Logs
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

@@ -1,0 +1,19 @@
+Este arquivo diz ao Git o que IGNORAR.
+
+É crucial para segurança e para não enviar lixo.
+
+Arquivo de segredos
+
+NUNCA ENVIE SUAS SENHAS E CHAVES PARA O GITHUB!
+
+.env
+
+Dependências (são milhões de arquivos)
+
+node_modules
+
+Logs
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

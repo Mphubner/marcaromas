@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  /* Diz ao TS para também validar os arquivos de configuração 
+    que rodam em ambiente Node.
+    
+    AQUI ESTÁ A CORREÇÃO:
+    Usamos "*.config.js" para que ele encontre
+    automaticamente todos os arquivos de configuração na raiz.
+  */
+  "include": ["*.config.js"]
+}
