@@ -11,11 +11,14 @@ model User {
   id            Int            @id @default(autoincrement())
   name          String
   email         String         @unique
-  password      String
+  password      String?
+  googleId      String?        @unique
+  googleEmail   String?
   isAdmin       Boolean        @default(false)
   createdAt     DateTime       @default(now())
   orders        Order[]
   subscriptions Subscription[]
+  carts         Cart[]
 }
 
 model Product {
@@ -68,4 +71,22 @@ model Config {
   id    Int    @id @default(autoincrement())
   key   String @unique
   value String
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int?
+  createdAt DateTime   @default(now())
+  items     CartItem[]
+  user      User?      @relation(fields: [userId], references: [id])
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cartId    Int
+  productId Int?
+  name      String?
+  quantity  Int     @default(1)
+  price     Float?
+  cart      Cart    @relation(fields: [cartId], references: [id])
 }

@@ -18,20 +18,15 @@ import {
 import { Sparkles, Check, Gift, Heart, Package, ArrowRight, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Hook para buscar os planos
-const usePlans = () => {
-  return useQuery({
-    queryKey: ["plans"],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/plans`);
-      if (!res.ok) throw new Error("Erro ao buscar planos");
-      return res.json();
-    },
-  });
-};
+// Novo componente e serviço
+import PlanCard from "../components/PlanCard.jsx";
+import { planService } from "../services/planService.js";
 
 export default function ClubePage() {
-  const { data: plans = [], isLoading } = usePlans();
+  const { data: plans = [], isLoading } = useQuery({
+    queryKey: ["plans"],
+    queryFn: planService.getAll
+  });
 
   const faqs = [
     {
@@ -105,69 +100,17 @@ export default function ClubePage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {plans.map((plan, index) => {
-                const isPopular = plan.name.toLowerCase().includes("plus");
-                return (
-                  <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.2 }}
-                  >
-                    <Card className={`border-2 hover:shadow-2xl transition-all duration-300 h-full relative ${
-                      isPopular
-                        ? "border-brand-primary bg-gradient-to-br from-white to-brand-primary/5 scale-105"
-                        : "border-gray-200 bg-white"
-                    }`}>
-                      {isPopular && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-                          <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 text-sm font-bold shadow-lg animate-pulse">
-                            MAIS POPULAR
-                          </Badge>
-                        </div>
-                      )}
-                      <CardContent className="p-8 text-center">
-                        <h3 className="text-3xl font-bold text-brand-dark mb-2">
-                          {plan.name}
-                        </h3>
-                        <div className="text-5xl font-bold text-brand-primary mb-4">
-                          R$ {plan.price.toFixed(2).replace('.', ',')}
-                          <span className="text-lg text-gray-500">/mês</span>
-                        </div>
-                        <p className="text-gray-600 mb-6">{plan.description}</p>
-                        
-                        <div className="space-y-3 mb-6 text-left">
-                          <p className="font-semibold text-brand-dark text-sm uppercase tracking-wide text-center mb-4">
-                            O que você recebe:
-                          </p>
-                          {plan.items_included?.map((item, i) => (
-                            <div key={i} className="flex items-start gap-3">
-                              <div className="w-6 h-6 rounded-full bg-brand-primary flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Check className="w-4 h-4 text-white" />
-                              </div>
-                              <span className="text-gray-700 text-sm leading-relaxed">{item}</span>
-                            </div>
-                          ))}
-                        </div>
-
-                        <Link to={`/checkout?plan=${plan.id}`}>
-                          <Button
-                            className={`w-full py-6 text-lg mt-8 ${
-                              isPopular
-                                ? "bg-gradient-to-r from-brand-primary to-brand-accent hover:from-brand-dark hover:to-brand-primary"
-                                : "bg-brand-accent hover:bg-brand-primary"
-                            }`}
-                          >
-                            Assinar {plan.name}
-                            <ArrowRight className="ml-2 w-5 h-5" />
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+              {plans.map((plan, index) => (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.2 }}
+                >
+                  <PlanCard plan={plan} index={index} featured={false} />
+                </motion.div>
+              ))}
             </div>
           )}
         </div>

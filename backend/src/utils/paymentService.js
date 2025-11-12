@@ -2,17 +2,29 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 import Stripe from "stripe";
 import { paymentConfig } from "../config/paymentConfig.js";
 
-const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
-});
+// Support multiple Mercado Pago credentials:
+// - Subscriptions (recurring products)
+// - Transparent/Payments (checkout transparente for store products)
+
+function createMpClient(accessToken) {
+  return new MercadoPagoConfig({ accessToken });
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-01",
 });
 
-export async function createPaymentSession(items) {
+export async function createPaymentSession(items, opts = {}) {
+  // opts.type: 'subscription' | 'transparent' | undefined
   if (paymentConfig.defaultGateway === "mercadopago") {
-    const preference = new Preference(mpClient);
+    // choose credentials
+    const isSubscription = opts.type === 'subscription';
+    const accessToken = isSubscription
+      ? (process.env.MERCADOPAGO_ACCESS_TOKEN_SUBS || process.env.MERCADOPAGO_ACCESS_TOKEN)
+      : (process.env.MERCADOPAGO_ACCESS_TOKEN_TRANSPARENT || process.env.MERCADOPAGO_ACCESS_TOKEN);
+
+    const client = createMpClient(accessToken);
+    const preference = new Preference(client);
 
     const body = {
       items: items.map((it) => ({

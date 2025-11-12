@@ -1,10 +1,10 @@
-import { Router } from "express";
 import express from "express";
-import { listProducts as getProducts, getCurrentBox } from "../controllers/product.controller.js";
+import { listProducts as getProducts } from "../controllers/product.controller.js";
 
 const router = express.Router();
 
-router.get("/products", getProducts);
-router.get("/current-box", getCurrentBox);
+// Mounting this router at `/api/products` in app.js ->
+// GET /api/products  -> returns list of products
+router.get("/", getProducts);
 
 export default router;

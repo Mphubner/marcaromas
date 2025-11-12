@@ -42,30 +42,54 @@ import { motion } from "framer-motion";
 import AromaQuiz from "../components/AromaQuiz.jsx"; // Caminho relativo
 import NewsletterForm from "../components/NewsletterForm.jsx"; // Caminho relativo
 import ProductRecommendations from "../components/ProductRecommendations.jsx"; // Caminho relativo
+import ReviewCard from "../components/ReviewCard.jsx"; // Novo componente
+import ProductCard from "../components/ProductCard.jsx"; // Novo componente
+import PlanCard from "../components/PlanCard.jsx"; // Novo componente
 
-// Função hook para buscar dados da API
-const useApiQuery = (queryKey, endpoint) => {
-  return useQuery({
-    queryKey: [queryKey],
-    queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/${endpoint}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${endpoint}`);
-      }
-      return response.json();
-    },
-  });
-};
+// Serviços
+import { productService } from "../services/productService.js";
+import { planService } from "../services/planService.js";
 
 export default function Home() {
   const [showQuiz, setShowQuiz] = useState(false);
   
-  // Hooks para buscar dados
-  const { data: plans = [] } = useApiQuery("plans", "plans");
-  const { data: currentBox } = useApiQuery("current-box", "current-box");
-  const { data: reviews = [] } = useApiQuery("reviews", "approved-reviews");
-  const { data: heroSettings } = useApiQuery("hero-settings", "page-settings/hero");
-  const { data: products } = useApiQuery("products", "products");
+  // Hooks para buscar dados usando os novos serviços
+  const { data: plans = [] } = useQuery({
+    queryKey: ['plans'],
+    queryFn: planService.getPopular
+  });
+  
+  const { data: currentBox } = useQuery({
+    queryKey: ['current-box'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/current-box`);
+      if (!response.ok) throw new Error('Failed to fetch current box');
+      return response.json();
+    }
+  });
+  
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['reviews'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/reviews/approved`);
+      if (!response.ok) throw new Error('Failed to fetch reviews');
+      return response.json();
+    }
+  });
+  
+  const { data: heroSettings } = useQuery({
+    queryKey: ['hero-settings'],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/page-settings/hero`);
+      if (!response.ok) throw new Error('Failed to fetch hero settings');
+      return response.json();
+    }
+  });
+  
+  const { data: products = [] } = useQuery({
+    queryKey: ['products-featured'],
+    queryFn: productService.getFeatured
+  });
 
   // Mock de usuário (vamos implementar o login real depois)
   const user = null; 
@@ -376,31 +400,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="border-none shadow-lg h-full">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-1 mb-3">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            className={`w-4 h-4 ${
-                              star <= review.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      {review.title && (
-                        <h4 className="font-bold text-brand-dark mb-2">{review.title}</h4>
-                      )}
-                      <p className="text-gray-700 text-sm mb-4 line-clamp-4">
-                        {review.comment}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        - {review.user_email.split('@')[0]}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <ReviewCard review={review} index={index} />
                 </motion.div>
               ))}
             </div>
@@ -427,7 +427,7 @@ export default function Home() {
             </motion.div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              {plans.map((plan, index) => (
+              {plans.slice(0, 3).map((plan, index) => (
                 <motion.div
                   key={plan.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -435,21 +435,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.2 }}
                 >
-                  <Card className="border-2 border-gray-200 hover:border-brand-primary hover:shadow-2xl transition-all">
-                    <CardContent className="p-8 text-center">
-                      <h3 className="text-2xl font-bold text-brand-dark mb-2">{plan.name}</h3>
-                      <div className="text-5xl font-bold text-brand-primary mb-4">
-                        R$ {plan.price.toFixed(2).replace('.', ',')}
-                        <span className="text-lg text-gray-500">/mês</span>
-                      </div>
-                      <p className="text-gray-600 mb-6">{plan.description}</p>
-                      <Link to={`/checkout?plan=${plan.id}`}>
-                        <Button className="w-full bg-brand-primary hover:bg-brand-dark">
-                          Assinar {plan.name}
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
+                  <PlanCard plan={plan} index={index} />
                 </motion.div>
               ))}
             </div>

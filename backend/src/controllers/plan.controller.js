@@ -32,3 +32,21 @@ export const getPlans = async (req, res) => {
     res.status(500).json({ message: "Erro ao carregar planos de assinatura" });
   }
 };
+
+export const getPlanById = async (req, res) => {
+  try {
+    const plans = [
+      { id: 1, name: "Essencial", price: 89.9, description: "1 vela artesanal + mimo surpresa + frete grátis.", features: ["100% natural", "Feito à mão", "Entrega mensal"] },
+      { id: 2, name: "Premium", price: 129.9, description: "2 velas + incenso + item extra de bem-estar.", features: ["Aromas exclusivos", "Cancelamento flexível", "Brinde mensal"] },
+      { id: 3, name: "Luxury", price: 189.9, description: "3 velas grandes + difusor + presente especial.", features: ["Box de luxo", "Curadoria personalizada", "Edição limitada"] },
+    ];
+
+    const id = parseInt(req.params.id, 10);
+    const plan = plans.find(p => p.id === id);
+    if (!plan) return res.status(404).json({ message: 'Plano não encontrado' });
+    res.json(plan);
+  } catch (error) {
+    console.error('Erro ao buscar plano:', error);
+    res.status(500).json({ message: 'Erro ao carregar plano' });
+  }
+};
