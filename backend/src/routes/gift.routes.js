@@ -5,7 +5,7 @@ import {
   sendGiftNotification,
   getAllGifts
 } from '../controllers/gift.controller.js';
-import { authenticate } from '../middlewares/auth.js';
+import { authMiddleware as authenticate } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
