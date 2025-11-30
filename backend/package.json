@@ -7,6 +7,7 @@
     "dev:node": "node src/server.js",
     "dev:watch": "nodemon --watch src --ext js --exec node src/server.js",
     "start": "node src/server.js",
+    "postinstall": "prisma generate",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
