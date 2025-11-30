@@ -1,256 +1,431 @@
-
-
-
-
-import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { prisma } from '../lib/prisma.js';
-import dotenv from 'dotenv';
-import { sendPaymentConfirmationEmail, sendPaymentFailureEmail } from '../utils/emailService.js';
 
-dotenv.config();
+// Get Mercado Pago access token with fallback logic
+const mpAccessToken =
+  process.env.MERCADOPAGO_ACCESS_TOKEN_TRANSPARENT ||
+  process.env.MERCADOPAGO_ACCESS_TOKEN;
 
-// Support separate credentials for subscriptions vs transparent checkout (store products)
-function createMpClient(accessToken) {
-  return new MercadoPagoConfig({ accessToken });
+// Validate Mercado Pago configuration
+if (!mpAccessToken) {
+  console.error('[Payment] WARNING: MERCADOPAGO_ACCESS_TOKEN_TRANSPARENT or MERCADOPAGO_ACCESS_TOKEN not configured. Payments will fail.');
 }
 
-// For preferences (Checkout Pro), use subscription or default token
-const subToken = process.env.MERCADOPAGO_ACCESS_TOKEN_SUBS || process.env.MERCADOPAGO_ACCESS_TOKEN;
-const client = createMpClient(subToken);
+// Configure Mercado Pago with the Payment Access Token
+const client = new MercadoPagoConfig({
+  accessToken: mpAccessToken,
+});
+const preferenceClient = new Preference(client);
+const paymentClient = new Payment(client);
 
-export async function createPreference(req, res, next) {
+/**
+ * Create payment preference for checkout
+ */
+export const createPaymentPreference = async (req, res, next) => {
   try {
-    const { items, payer, shipping_address } = req.body;
-    const userId = req.user.id;
-
-    if (!items || items.length === 0) {
-      return res.status(400).json({ error: "A lista de itens não pode estar vazia." });
-    }
-    if (!userId) {
-      return res.status(401).json({ error: "Usuário não autenticado." });
+    // Validate access token
+    if (!mpAccessToken) {
+      return res.status(503).json({
+        error: 'payment_not_configured',
+        message: 'Sistema de pagamento não está configurado. Entre em contato com o suporte.'
+      });
     }
 
-    const totalAmount = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+    const { orderId } = req.body;
 
-    const order = await prisma.order.create({
-      data: {
-        user: { connect: { id: userId } },
-        total: totalAmount,
-        status: 'PENDING',
-        items: {
-          create: items.map(item => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: item.unit_price,
-          })),
-        },
+    if (!orderId) {
+      return res.status(400).json({
+        error: 'missing_order_id',
+        message: 'ID do pedido é obrigatório.'
+      });
+    }
+
+    // Find order with items and user
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
+      include: {
+        items: { include: { product: true } },
+        user: true
       },
     });
 
-    const preference = new Preference(client);
-    const result = await preference.create({
-      body: {
-        items: items.map(item => ({
-          id: item.id,
-          title: item.title,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
+    if (!order) {
+      return res.status(404).json({
+        error: 'order_not_found',
+        message: 'Pedido não encontrado.'
+      });
+    }
+
+    // Validate order has items
+    if (!order.items || order.items.length === 0) {
+      return res.status(400).json({
+        error: 'empty_order',
+        message: 'Pedido não possui itens.'
+      });
+    }
+
+    // Build preference data
+    const preference = {
+      items: order.items.map(item => {
+        if (!item.product) {
+          throw new Error(`Product not found for order item ${item.id}`);
+        }
+        return {
+          id: item.productId.toString(),
+          title: item.product.name || 'Produto',
+          quantity: item.quantity || 1,
+          unit_price: parseFloat(item.price) || 0,
           currency_id: 'BRL',
-        })),
-        payer: {
-          name: payer.name,
-          email: payer.email,
-        },
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/payment/success`,
-          failure: `${process.env.FRONTEND_URL}/payment/failure`,
-          pending: `${process.env.FRONTEND_URL}/payment/pending`,
-        },
-        auto_return: 'approved',
-        external_reference: order.id.toString(),
-  notification_url: `${process.env.API_URL}/api/payment/webhook`,
+          description: item.product.description?.substring(0, 100) || '',
+        };
+      }),
+      payer: {
+        name: order.user?.name || '',
+        email: order.user?.email || '',
+      },
+      back_urls: {
+        success: `${process.env.FRONTEND_URL}/payment/success?order_id=${order.id}`,
+        failure: `${process.env.FRONTEND_URL}/payment/failure?order_id=${order.id}`,
+        pending: `${process.env.FRONTEND_URL}/payment/pending?order_id=${order.id}`,
+      },
+      auto_return: 'approved',
+      external_reference: order.id.toString(),
+      statement_descriptor: 'MARC AROMAS',
+      notification_url: `${process.env.API_URL || process.env.BACKEND_URL || 'http://localhost:5001'}/api/webhooks/mercadopago`,
+    };
+
+    console.log('[Payment] Creating preference for order:', order.id);
+
+    // Create preference in Mercado Pago
+    const response = await preferenceClient.create({ body: preference });
+
+    // Save preference ID to order
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        mpPreferenceId: response.id,
+        status: 'pending_payment',
       },
     });
 
-    res.json({ id: result.id, init_point: result.init_point });
+    console.log('[Payment] Preference created:', response.id);
+
+    // Return preference data
+    res.json({
+      ok: true,
+      preferenceId: response.id,
+      init_point: response.init_point,
+      sandbox_init_point: response.sandbox_init_point, // For testing
+    });
 
   } catch (error) {
-    console.error("Erro ao criar preferência de pagamento:", error);
+    console.error('[Payment] Error creating preference:', error);
+
+    // Handle Mercado Pago specific errors
+    if (error.cause) {
+      return res.status(500).json({
+        error: 'mercadopago_error',
+        message: 'Erro ao processar pagamento com Mercado Pago.',
+        details: error.message,
+      });
+    }
+
     next(error);
   }
-}
+};
 
-export async function mpWebhook(req, res) {
+/**
+ * Create PIX payment
+ */
+export const createPixPayment = async (req, res, next) => {
   try {
-    const { query } = req;
-    
-    console.log('🔔 Webhook Mercado Pago recebido:', { 
-      type: query.type, 
-      data: query.data
-    });
-
-    const webhookType = query.type;
-    const paymentId = query['data.id'];
-
-    if (webhookType !== 'payment') {
-      console.log('⏭️  Tipo de webhook ignorado:', webhookType);
-      return res.status(200).json({ received: true });
+    if (!mpAccessToken) {
+      return res.status(503).json({
+        error: 'payment_not_configured',
+        message: 'Sistema de pagamento não está configurado.'
+      });
     }
 
-    if (!paymentId) {
-      console.warn('⚠️  ID de pagamento não encontrado');
-      return res.status(400).json({ error: 'Payment ID required' });
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({
+        error: 'missing_order_id',
+        message: 'ID do pedido é obrigatório.'
+      });
     }
 
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN_TRANSPARENT || process.env.MERCADOPAGO_ACCESS_TOKEN}`,
-      },
-    });
-
-    if (!mpRes.ok) {
-      console.error(`❌ Erro ao buscar pagamento ${paymentId}`);
-      return res.status(500).json({ error: 'Failed to fetch payment info' });
-    }
-
-    const mpPayment = await mpRes.json();
-    const { status, external_reference, status_detail } = mpPayment;
-    const orderId = parseInt(external_reference);
-
-    console.log(`💳 Pagamento ${paymentId}:`, { status, orderId });
-
-    if (!orderId || isNaN(orderId)) {
-      console.warn('⚠️  Order ID inválido');
-      return res.status(400).json({ error: 'Invalid order ID' });
-    }
-
-    let orderStatus = 'PENDING';
-    switch (status) {
-      case 'approved':
-      case 'authorized':
-        orderStatus = 'CONFIRMED';
-        break;
-      case 'in_process':
-        orderStatus = 'PROCESSING';
-        break;
-      case 'rejected':
-      case 'failed':
-        orderStatus = 'FAILED';
-        break;
-      case 'cancelled':
-        orderStatus = 'CANCELLED';
-        break;
-      case 'refunded':
-        orderStatus = 'REFUNDED';
-        break;
-      case 'charged_back':
-        orderStatus = 'CHARGEBACK';
-        break;
-      default:
-        orderStatus = 'PENDING';
-    }
-
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: { status: orderStatus },
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
       include: { user: true, items: true }
     });
 
-    console.log(`✅ Pedido #${orderId} atualizado para: ${orderStatus}`);
-
-    if (orderStatus === 'CONFIRMED' || orderStatus === 'PROCESSING') {
-      await sendPaymentConfirmationEmail(updatedOrder, updatedOrder.user);
+    if (!order) {
+      return res.status(404).json({
+        error: 'order_not_found',
+        message: 'Pedido não encontrado.'
+      });
     }
 
-    if (orderStatus === 'FAILED') {
-      await sendPaymentFailureEmail(updatedOrder, updatedOrder.user, status_detail || 'Pagamento recusado');
-    }
+    console.log('[Payment] Creating PIX payment for order:', order.id);
 
-    res.status(200).json({ received: true, orderId, status: orderStatus });
+    // Create PIX payment
+    const payment = await paymentClient.create({
+      body: {
+        transaction_amount: parseFloat(order.total),
+        payment_method_id: 'pix',
+        description: `Pedido #${order.orderNumber}`,
+        payer: {
+          email: order.user?.email || 'cliente@marcaromas.com',
+          first_name: order.user?.name?.split(' ')[0] || 'Cliente',
+          last_name: order.user?.name?.split(' ').slice(1).join(' ') || '',
+        },
+        external_reference: order.id.toString(),
+        notification_url: `${process.env.API_URL || process.env.BACKEND_URL || 'http://localhost:5001'}/api/webhooks/mercadopago`,
+      },
+    });
+
+    // Update order with payment info
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        mpPaymentId: payment.id.toString(),
+        paymentMethod: 'pix',
+        status: 'pending_payment',
+      }
+    });
+
+    console.log('[Payment] PIX payment created:', payment.id);
+
+    res.json({
+      ok: true,
+      paymentId: payment.id,
+      status: payment.status,
+      qrCode: payment.point_of_interaction?.transaction_data?.qr_code,
+      qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64,
+      ticketUrl: payment.point_of_interaction?.transaction_data?.ticket_url,
+    });
 
   } catch (error) {
-    console.error("❌ Erro ao processar webhook:", error);
-    res.status(200).json({ error: error.message });
-  }
-}
+    console.error('[Payment] Error creating PIX payment:', error);
 
-export async function payWithCard(req, res, next) {
-  try {
-    const { token, items, installments = 1, payer } = req.body;
-    const user = req.user;
-
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    if (!token) return res.status(400).json({ error: 'Card token is required' });
-    if (!items || !items.length) return res.status(400).json({ error: 'Items required' });
-
-    // Validate products exist to avoid FK violations
-    const productIds = items.map(it => it.id);
-    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
-    const missing = productIds.filter(id => !products.find(p => p.id === id));
-    if (missing.length > 0) {
-      return res.status(400).json({ error: `Produtos não encontrados: ${missing.join(',')}` });
+    if (error.cause) {
+      return res.status(500).json({
+        error: 'mercadopago_error',
+        message: 'Erro ao processar pagamento PIX.',
+        details: error.message,
+      });
     }
 
-    // Calculate total using item prices (prefer unit_price if provided)
-    const totalAmount = items.reduce((s, it) => s + (it.unit_price || it.price || 0) * (it.quantity || 1), 0);
+    next(error);
+  }
+};
 
-    // Create order and related items (safe because products validated)
-    const order = await prisma.order.create({
-      data: {
-        user: { connect: { id: user.id } },
-        total: totalAmount,
-        status: 'PENDING',
-        items: { create: items.map(it => ({ productId: it.id, quantity: it.quantity, price: it.unit_price || it.price })) },
-      },
+/**
+ * Check payment status (for polling)
+ */
+export const checkPaymentStatus = async (req, res, next) => {
+  try {
+    const { paymentId } = req.params;
+
+    console.log('[Payment] Checking payment status:', paymentId);
+
+    const payment = await paymentClient.get({ id: paymentId });
+
+    // Update order if payment approved
+    if (payment.status === 'approved') {
+      const order = await prisma.order.findFirst({
+        where: { mpPaymentId: paymentId }
+      });
+
+      if (order && order.status !== 'paid') {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            status: 'paid',
+            paymentStatus: 'approved',
+            paymentDetails: {
+              status: payment.status,
+              status_detail: payment.status_detail,
+              payment_type_id: payment.payment_type_id,
+            }
+          }
+        });
+        console.log('[Payment] Order updated to paid:', order.id);
+      }
+    }
+
+    res.json({
+      paymentId: payment.id,
+      status: payment.status,
+      statusDetail: payment.status_detail,
+    });
+
+  } catch (error) {
+    console.error('[Payment] Error checking payment:', error);
+    next(error);
+  }
+};
+
+/**
+ * Create transparent payment (card tokenized in frontend)
+ */
+export const createTransparentPayment = async (req, res, next) => {
+  try {
+    if (!mpAccessToken) {
+      return res.status(503).json({
+        error: 'payment_not_configured',
+        message: 'Sistema de pagamento não está configurado.'
+      });
+    }
+
+    const {
+      orderId,
+      token, // Card token from MercadoPago.js (frontend)
+      installments,
+      paymentMethodId,
+      issuerId,
+      payer
+    } = req.body;
+
+    if (!orderId || !token) {
+      return res.status(400).json({
+        error: 'missing_required_fields',
+        message: 'orderId e token são obrigatórios.'
+      });
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
       include: { user: true }
     });
 
-    // Use transparent credentials (specific for store products payment API calls)
-    const transparentToken = process.env.MERCADOPAGO_ACCESS_TOKEN_TRANSPARENT || process.env.MERCADOPAGO_ACCESS_TOKEN;
-
-    const mpRes = await fetch('https://api.mercadopago.com/v1/payments', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${transparentToken}`,
-      },
-      body: JSON.stringify({
-        transaction_amount: Number(totalAmount.toFixed(2)),
-        token,
-        description: `Pedido #${order.id}`,
-        installments: Number(installments || 1),
-        payment_method_id: 'visa',
-        payer: {
-          email: payer?.email || user.email,
-          identification: payer?.identification || undefined,
-        },
-        external_reference: order.id.toString(),
-      }),
-    });
-
-    const mpData = await mpRes.json();
-
-    console.log('💳 Resposta Mercado Pago:', mpData);
-
-    let orderStatus = 'PENDING';
-    if (mpData.status === 'approved') {
-      orderStatus = 'CONFIRMED';
-      await sendPaymentConfirmationEmail(order, user);
-    } else if (mpData.status === 'rejected' || mpData.status === 'failed') {
-      orderStatus = 'FAILED';
-      await sendPaymentFailureEmail(order, user, mpData.status_detail || 'Pagamento recusado');
+    if (!order) {
+      return res.status(404).json({
+        error: 'order_not_found',
+        message: 'Pedido não encontrado.'
+      });
     }
 
-    await prisma.order.update({ 
-      where: { id: order.id }, 
-      data: { status: orderStatus } 
+    console.log('[Payment] Creating transparent payment for order:', order.id);
+
+    // Create payment with card token
+    const payment = await paymentClient.create({
+      body: {
+        token, // Card token (secure, from MP.js)
+        transaction_amount: parseFloat(order.total),
+        installments: parseInt(installments) || 1,
+        payment_method_id: paymentMethodId,
+        issuer_id: issuerId,
+        payer: {
+          email: payer?.email || order.user?.email || 'cliente@marcaromas.com',
+          identification: {
+            type: payer?.identificationType || 'CPF',
+            number: payer?.identificationNumber || '00000000000'
+          }
+        },
+        external_reference: order.id.toString(),
+        description: `Pedido #${order.orderNumber}`,
+        statement_descriptor: 'MARC AROMAS',
+        notification_url: `${process.env.API_URL || process.env.BACKEND_URL || 'http://localhost:5001'}/api/webhooks/mercadopago`,
+      }
     });
 
-    res.json({ order, payment: mpData });
-  } catch (err) {
-    console.error('Error processing card payment', err);
-    next(err);
+    // Map payment status to order status
+    const statusMap = {
+      approved: 'paid',
+      pending: 'pending_payment',
+      in_process: 'processing',
+      rejected: 'cancelled',
+    };
+
+    const orderStatus = statusMap[payment.status] || 'pending_payment';
+
+    // Update order with payment info
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        mpPaymentId: payment.id.toString(),
+        paymentMethod: paymentMethodId,
+        status: orderStatus,
+        paymentStatus: payment.status,
+        paymentDetails: {
+          status: payment.status,
+          status_detail: payment.status_detail,
+          payment_method: paymentMethodId,
+          payment_type: payment.payment_type_id,
+          installments: parseInt(installments) || 1,
+        }
+      }
+    });
+
+    console.log('[Payment] Transparent payment created:', payment.id, 'Status:', payment.status);
+
+    res.json({
+      ok: true,
+      paymentId: payment.id,
+      status: payment.status,
+      statusDetail: payment.status_detail,
+      approved: payment.status === 'approved',
+    });
+
+  } catch (error) {
+    console.error('[Payment] Error creating transparent payment:', error);
+
+    if (error.cause) {
+      return res.status(500).json({
+        error: 'mercadopago_error',
+        message: 'Erro ao processar pagamento.',
+        details: error.message,
+      });
+    }
+
+    next(error);
   }
-}
+};
+
+/**
+ * Get payment status by order ID
+ */
+export const getPaymentStatus = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await prisma.order.findUnique({
+      where: { id: parseInt(orderId) },
+      select: {
+        id: true,
+        status: true,
+        mpPreferenceId: true,
+        mpPaymentId: true,
+        paymentDetails: true,
+        total: true,
+        createdAt: true,
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Pedido não encontrado.' });
+    }
+
+    res.json({
+      orderId: order.id,
+      status: order.status,
+      paymentStatus: order.paymentDetails?.status || 'pending',
+      total: order.total,
+      createdAt: order.createdAt,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default {
+  createPaymentPreference,
+  createPixPayment,
+  createTransparentPayment,
+  checkPaymentStatus,
+  getPaymentStatus,
+};
+

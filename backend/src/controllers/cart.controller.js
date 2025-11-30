@@ -1,86 +1,104 @@
-import prisma from "../config/db.js";
+import { prisma } from '../lib/prisma.js';
 
 // Helper: get or create cart for user
-async function getOrCreateCartForUser(userId) {
-  let cart = await prisma.cart.findFirst({ where: { userId }, include: { items: true } });
+async function getOrCreateCart(userId) {
+  let cart = await prisma.cart.findFirst({ where: { userId } });
   if (!cart) {
-    cart = await prisma.cart.create({ data: { userId } , include: { items: true } });
+    cart = await prisma.cart.create({ data: { userId } });
   }
   return cart;
 }
 
-export async function getCart(req, res) {
+export const getCart = async (req, res, next) => {
   try {
-    const user = req.user;
-    if (!user) return res.json({ items: [] });
-    const cart = await prisma.cart.findFirst({ where: { userId: user.id }, include: { items: true } });
-    res.json({ items: cart?.items || [] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao carregar carrinho' });
-  }
-}
+    if (!req.user) return res.json([]); // Retorna carrinho vazio para não logados
 
-export async function addItem(req, res) {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    const { productId, quantity = 1, name, price } = req.body;
-    const cart = await getOrCreateCartForUser(user.id);
-    const item = await prisma.cartItem.create({ data: { cartId: cart.id, productId, name, quantity, price } });
-    const items = await prisma.cartItem.findMany({ where: { cartId: cart.id } });
-    res.json({ items });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao adicionar item' });
+    const cartItems = await prisma.cartItem.findMany({
+      where: { cart: { userId: req.user.id } },
+      include: { product: true }, // Inclui os detalhes do produto
+    });
+    res.json(cartItems);
+  } catch (error) {
+    next(error);
   }
-}
+};
 
-export async function updateItem(req, res) {
+export const addItemToCart = async (req, res, next) => {
   try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    const itemId = Number(req.params.itemId);
+    if (!req.user) return res.status(401).json({ message: 'Autenticação necessária.' });
+
+    const { productId, quantity } = req.body;
+    const cart = await getOrCreateCart(req.user.id);
+
+    const existingItem = await prisma.cartItem.findFirst({
+      where: { cartId: cart.id, productId },
+    });
+
+    if (existingItem) {
+      // Se o item já existe, atualiza a quantidade
+      const updatedItem = await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: existingItem.quantity + quantity },
+      });
+      res.json(updatedItem);
+    } else {
+      // Se não existe, cria um novo item
+      const newItem = await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId,
+          quantity,
+        },
+      });
+      res.status(201).json(newItem);
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCartItem = async (req, res, next) => {
+  try {
+    const { itemId } = req.params;
     const { quantity } = req.body;
-    await prisma.cartItem.update({ where: { id: itemId }, data: { quantity } });
-    const cart = await prisma.cart.findFirst({ where: { userId: user.id }, include: { items: true } });
-    res.json({ items: cart?.items || [] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao atualizar item' });
-  }
-}
 
-export async function removeItem(req, res) {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    const itemId = Number(req.params.itemId);
-    await prisma.cartItem.delete({ where: { id: itemId } });
-    const cart = await prisma.cart.findFirst({ where: { userId: user.id }, include: { items: true } });
-    res.json({ items: cart?.items || [] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao remover item' });
-  }
-}
+    if (quantity <= 0) {
+      await prisma.cartItem.delete({ where: { id: parseInt(itemId) } });
+      return res.status(204).send();
+    }
 
-export async function clearCart(req, res) {
+    const updatedItem = await prisma.cartItem.update({
+      where: { id: parseInt(itemId) },
+      data: { quantity },
+    });
+    res.json(updatedItem);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeCartItem = async (req, res, next) => {
   try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    const cart = await prisma.cart.findFirst({ where: { userId: user.id } });
+    const { itemId } = req.params;
+    await prisma.cartItem.delete({
+      where: { id: parseInt(itemId) },
+    });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearCart = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Autenticação necessária.' });
+    const cart = await prisma.cart.findFirst({ where: { userId: req.user.id } });
     if (cart) {
       await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
     }
-    res.json({ items: [] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao limpar carrinho' });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-}
+};
 
-// Backwards-compatible echo
-export function echoCart(req, res) {
-  res.json({ ok: true, cart: req.body.cart || [] });
-}

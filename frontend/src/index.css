@@ -1,13 +1,112 @@
-/* Importa as diretivas base do Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Define os estilos padrão para o <body> */
 @layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 30 28% 42%;
+    /* #8B6B4C */
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 30 20% 96%;
+    --secondary-foreground: 24 9.8% 10%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 30 28% 42%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 20 14.3% 4.1%;
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 30 28% 42%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 30 28% 42%;
+  }
+
   body {
-    @apply bg-brand-light text-brand-dark; /* Fundo e texto padrão */
+    @apply bg-brand-light text-brand-dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Luxury Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+
+  /* Global smooth transitions */
+  * {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Rounded corners everywhere */
+  button:not(.no-round),
+  .card,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .rounded {
+    @apply rounded-2xl;
+  }
+
+  /* Image hover effects */
+  img {
+    @apply transition-transform duration-700;
+  }
+
+  /* Button hover effects */
+  button:not(.no-hover) {
+    @apply transition-all duration-300 hover:scale-105;
+  }
+
+  /* Card hover effects */
+  .card {
+    @apply transition-all duration-500 hover:shadow-2xl hover:-translate-y-2;
+  }
+
+  /* Product card specific */
+  .product-card {
+    @apply rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
   }
 }

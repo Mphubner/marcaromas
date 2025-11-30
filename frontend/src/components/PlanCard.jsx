@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from './ui/card.jsx';
-import { Button } from './ui/button.jsx';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight } from 'lucide-react';
-import { Badge } from './ui/badge.jsx';
+import { Badge } from '@/components/ui/badge';
 
 /**
  * PlanCard - Componente para exibição de planos de assinatura
@@ -29,11 +29,10 @@ const PlanCard = ({ plan, index = 0, featured = false }) => {
       className="h-full"
     >
       <Card
-        className={`border-2 hover:shadow-xl transition-all duration-300 h-full flex flex-col relative ${
-          isPopular
+        className={`border-2 hover:shadow-xl transition-all duration-300 h-full flex flex-col relative ${isPopular
             ? 'border-brand-primary bg-gradient-to-br from-white to-brand-primary/5'
             : 'border-gray-200 bg-white'
-        }`}
+          }`}
       >
         {/* Popular Badge */}
         {isPopular && (
@@ -90,11 +89,10 @@ const PlanCard = ({ plan, index = 0, featured = false }) => {
           {/* CTA Button */}
           <Link to={`/checkout?plan=${plan.id}`} className="w-full">
             <Button
-              className={`w-full py-3 text-base font-semibold gap-2 ${
-                isPopular
+              className={`w-full py-3 text-base font-semibold gap-2 text-white ${isPopular
                   ? 'bg-gradient-to-r from-brand-primary to-brand-accent hover:from-brand-dark hover:to-brand-primary'
                   : 'bg-brand-accent hover:bg-brand-primary'
-              }`}
+                }`}
             >
               Assinar {plan.name}
               <ArrowRight className="w-4 h-4" />

@@ -1,142 +1,148 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from './ui/card.jsx';
-import { Button } from './ui/button.jsx';
-import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Star } from 'lucide-react';
-import { Badge } from './ui/badge.jsx';
-import StarRating from './ui/starRating.jsx';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, Eye, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCart } from '../context/CartContext';
+import { toast } from 'sonner';
+import api from '../lib/api';
 
-/**
- * ProductCard - Componente para exibição de produtos em grid
- * Mostra imagem, preço, rating, badge de popularidade e botões de ação
- * @component
- * @example
- * <ProductCard 
- *   product={{ id: 1, name: "Vela Lavanda", price: 49.90, rating: 4.5, image: "url" }} 
- *   index={0} 
- *   onAddToCart={handleAdd}
- * />
- */
-const ProductCard = ({ product, index = 0, onAddToCart }) => {
-  const [isFavorited, setIsFavorited] = useState(false);
+export default function ProductCard({ product }) {
+  const [loading, setLoading] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const queryClient = useQueryClient();
+  const cartCtx = useCart();
+  const navigate = useNavigate();
 
-  const handleFavorite = (e) => {
+  // Get product images array (primary + additional)
+  const images = product.images && Array.isArray(product.images) && product.images.length > 0
+    ? product.images
+    : [product.image || product.thumbnail, product.image2].filter(Boolean);
+
+  const handleAddToCart = async (e) => {
     e.preventDefault();
-    setIsFavorited(!isFavorited);
-    // TODO: Salvar em localStorage ou na API
-  };
+    e.stopPropagation();
+    setLoading(true);
 
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    if (onAddToCart) {
-      onAddToCart(product);
+    try {
+      await api.post('/api/cart/items', { productId: product.id, quantity: 1 });
+      queryClient.invalidateQueries(['cart']);
+      if (cartCtx?.refresh) cartCtx.refresh();
+      toast.success('Produto adicionado ao carrinho!');
+    } catch (err) {
+      if (err?.response?.status === 401) {
+        toast.error('Faça login para adicionar ao carrinho');
+        navigate('/login');
+      } else {
+        console.error(err);
+        toast.error('Erro ao adicionar produto');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const rating = product.rating || 0;
-  const reviewCount = product.review_count || 0;
+  const handleBuyNow = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      await handleAddToCart(e);
+      navigate('/carrinho');
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
-      className="h-full"
-    >
-      <Card className="border-none shadow-lg overflow-hidden hover:shadow-xl transition-shadow h-full flex flex-col group">
-        {/* Image Container */}
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
-          {product.image && (
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-            />
-          )}
+    <div className="product-card group">
+      {/* Image Section with Hover Effect */}
+      <div className="relative h-80 overflow-hidden rounded-t-2xl bg-gray-100">
+        {/* First Image */}
+        <img
+          src={images[0]}
+          alt={product.name}
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
 
-          {/* Badge */}
-          {product.is_featured && (
-            <Badge className="absolute top-2 left-2 bg-brand-primary">
-              Destaque
-            </Badge>
-          )}
+        {/* Second Image on Hover (if available) */}
+        {images[1] && (
+          <img
+            src={images[1]}
+            alt={`${product.name} - visualização 2`}
+            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          />
+        )}
 
-          {/* Favorite Button */}
-          <button
-            onClick={handleFavorite}
-            className="absolute top-2 right-2 p-2 rounded-full bg-white/90 hover:bg-white shadow-md transition-all"
+        {/* Quick Action Overlay */}
+        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 p-4">
+          <Button
+            onClick={handleAddToCart}
+            disabled={loading}
+            className="bg-[#8B7355] text-white rounded-full px-6 py-3 font-semibold hover:bg-[#7A6548] shadow-lg flex items-center gap-2 no-hover"
           >
-            <Heart
-              className={`w-5 h-5 transition-colors ${
-                isFavorited
-                  ? 'fill-red-500 text-red-500'
-                  : 'text-gray-400'
-              }`}
-            />
-          </button>
+            <ShoppingCart className="w-4 h-4" />
+            {loading ? 'Adicionando...' : 'Adicionar'}
+          </Button>
+
+          <Button
+            onClick={handleBuyNow}
+            variant="outline"
+            className="bg-white/95 text-[#8B7355] rounded-full px-6 py-3 font-semibold border-2 border-[#8B7355] hover:bg-[#8B7355] hover:text-white shadow-lg flex items-center gap-2 no-hover"
+          >
+            <Zap className="w-4 h-4" />
+            Comprar
+          </Button>
         </div>
 
-        {/* Content */}
-        <CardContent className="p-4 flex-1 flex flex-col justify-between">
-          {/* Name */}
+        {/* Badges */}
+        {product.discount > 0 && (
+          <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+            -{product.discount}%
+          </div>
+        )}
+
+        {product.isNew && (
+          <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+            Novo
+          </div>
+        )}
+      </div>
+
+      {/* Product Info */}
+      <div className="p-6 bg-white rounded-b-2xl">
+        <h3 className="font-playfair text-xl font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-[#8B7355] transition-colors">
+          {product.name}
+        </h3>
+
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+          {product.short_description || product.description}
+        </p>
+
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-lg mb-1 line-clamp-2 text-brand-dark">
-              {product.name}
-            </h3>
-
-            {/* Description */}
-            {product.description && (
-              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                {product.description}
-              </p>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-gray-400 line-through text-sm mr-2">
+                R$ {product.originalPrice.toFixed(2)}
+              </span>
             )}
-
-            {/* Rating */}
-            <div className="flex items-center gap-2 my-2">
-              <StarRating value={Math.round(rating)} size="sm" />
-              <span className="text-xs text-gray-500">
-                {rating > 0 ? `${rating.toFixed(1)}` : 'Sem avaliações'}
-              </span>
-              {reviewCount > 0 && (
-                <span className="text-xs text-gray-400">({reviewCount})</span>
-              )}
-            </div>
+            <span className="text-[#8B7355] font-bold text-2xl">
+              R$ {(product.price || 0).toFixed(2)}
+            </span>
           </div>
 
-          {/* Price and Button */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-brand-primary">
-                {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }).format(product.price)}
-              </span>
-              {product.original_price && product.original_price > product.price && (
-                <span className="text-xs text-gray-400 line-through">
-                  {new Intl.NumberFormat('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL'
-                  }).format(product.original_price)}
-                </span>
-              )}
-            </div>
-
+          <Link to={`/produto/${product.slug || product.id}`}>
             <Button
-              onClick={handleAddToCart}
-              className="w-full bg-brand-primary hover:bg-brand-dark gap-2"
+              variant="outline"
               size="sm"
+              className="rounded-full border-[#8B7355] text-[#8B7355] hover:bg-[#8B7355] hover:text-white flex items-center gap-2"
             >
-              <ShoppingCart className="w-4 h-4" />
-              Adicionar
+              <Eye className="w-4 h-4" />
+              Ver Mais
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default ProductCard;
+}

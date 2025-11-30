@@ -1,10 +1,12 @@
 import React from 'react';
-import { Button } from './ui/button.jsx';
+import { GoogleLogin } from '@react-oauth/google';
 
-export default function GoogleSignInButton() {
+export default function GoogleSignInButton({ onSuccess, onError }) {
   return (
-    <Button variant="outline" className="w-full">
-      Continuar com Google
-    </Button>
+    <GoogleLogin
+      onSuccess={onSuccess}
+      onError={onError}
+      useOneTap
+    />
   );
 }

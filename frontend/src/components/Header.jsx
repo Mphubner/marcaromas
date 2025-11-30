@@ -1,4 +1,4 @@
-// src/components/Header.jsx
+// /marcaromas - Copia/frontend/src/components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, NavLink, useNavigate } from "react-router-dom";
@@ -8,205 +8,171 @@ import {
   X,
   Sun,
   Moon,
-  ChevronDown,
   User,
-  LogOut,
 } from "lucide-react";
-import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext";
-import ThemeToggle from "./ui/themetoggle";
-import Button from "./ui/button";
+import { useCart } from "../context/CartContext"; // mantém o uso de contexto existente
+import { cn } from "@/lib/utils";;
 
-const navItems = [
-  { name: "Home", path: "/" },
-  { name: "O Clube", path: "/clube" },
-  { name: "Loja", path: "/loja" },
-  { name: "Aromaterapia", path: "/aromaterapia" },
-  { name: "Sobre", path: "/sobre" },
-  { name: "Contato", path: "/contato" },
-  { name: "Presentear", path: "/presentear" }
-];
-
+/**
+ * Header / Navbar
+ * - muda cores baseado em scroll (isScrolled)
+ * - usa classes com boas cores para evitar texto branco sobre fundo branco
+ * - fecha menu mobile ao navegar
+ */
 export default function Header() {
-  const navigate = useNavigate();
-  const { cart } = useCart();
-  const { user, logout } = useAuth();
-
-  const [isSticky, setSticky] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [theme, setTheme] = useState("light");
+  const { cart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const onScroll = () => {
-      setSticky(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", onScroll);
+    const onScroll = () => setIsScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  useEffect(() => {
+    // se preferir persistir tema no localStorage
+    const saved = localStorage.getItem("marcaromas_theme");
+    if (saved) setTheme(saved);
+  }, []);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-    setDropdownOpen(false);
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("marcaromas_theme", next);
+    // se o app tiver provider de tema, disparar lá.
   };
+
+  const navItems = [
+    { name: "Home", to: "/" },
+    { name: "Marc Club", to: "/clube" },
+    { name: "Marc Store", to: "/loja" },
+    { name: "Essenza Blog", to: "/aromaterapia" },
+    { name: "Presentear", to: "/presentear" },
+  ];
 
   return (
     <motion.header
-      className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
-        isSticky
-          ? "bg-white/90 backdrop-blur border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-700"
-          : "bg-transparent"
-      }`}
-      initial={{ y: -60 }}
-      animate={{ y: 0 }}
+      initial={false}
+      style={{ background: "linear-gradient(to right, #8B7355, #5e4e3a)" }}
+      className={cn(
+        "fixed w-full z-50 transition-all duration-300 text-white shadow-md",
+        { "py-2": isScrolled, "py-4": !isScrolled }
+      )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <motion.div
-            whileHover={{ rotate: 5 }}
-            className="w-9 h-9 rounded-full bg-brand-primary flex items-center justify-center text-white font-semibold"
-          >
-            MA
-          </motion.div>
-          <span className="font-bold text-lg text-gray-900 dark:text-gray-100">
-            Marc Aromas
-          </span>
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" onClick={() => window.scrollTo({ top: 0 })} className="flex items-center gap-2">
+            <div className="bg-white p-1 rounded-full">
+              <img src="/logo192.png" alt="Marc Aromas" style={{ height: 32 }} />
+            </div>
+            <span className="font-bold text-lg text-white tracking-wide">
+              Marc Aromas
+            </span>
+          </Link>
+        </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4">
+        <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => (
             <NavLink
-              key={item.path}
-              to={item.path}
+              key={item.to}
+              to={item.to}
               className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "text-brand-primary"
-                    : "text-gray-700 hover:text-brand-primary dark:text-gray-300 dark:hover:text-brand-primary"
-                }`
+                cn("px-4 py-2 rounded-full transition-all text-sm font-medium", {
+                  "bg-white/20 text-white shadow-sm backdrop-blur-sm": isActive,
+                  "text-white/80 hover:bg-white/10 hover:text-white": !isActive,
+                })
               }
+              onClick={() => window.scrollTo({ top: 0 })}
             >
               {item.name}
             </NavLink>
           ))}
-        </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
+          <div className="h-6 w-px bg-white/20 mx-2" />
 
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            className="relative text-gray-700 dark:text-gray-200 hover:text-brand-primary"
-            onClick={() => navigate("/carrinho")}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            title="Alternar tema"
           >
-            <ShoppingBag size={22} />
-            {totalItems > 0 && (
-              <span className="absolute -top-1 -right-2 bg-brand-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {totalItems}
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/perfil")}
+            className="p-2 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            title="Perfil"
+          >
+            <User size={18} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate("/carrinho")}
+            className="p-2 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors relative"
+            title="Carrinho"
+          >
+            <ShoppingBag size={18} />
+            {cart && cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full shadow-sm">
+                {cart.length}
               </span>
             )}
-          </motion.button>
+          </button>
+        </nav>
 
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-full bg-brand-primary/20 flex items-center justify-center">
-                  <User size={16} className="text-brand-primary" />
-                </div>
-                <span className="hidden sm:inline text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {user.name?.split(" ")[0]}
-                </span>
-              </button>
-              
-              <AnimatePresence>
-                {dropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden"
-                  >
-                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {user.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.email}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigate("/perfil");
-                        setDropdownOpen(false);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Minha conta
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-red-600 dark:text-red-400 flex items-center gap-2"
-                    >
-                      <LogOut size={14} /> Sair
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/login")}
-            >
-              Entrar
-            </Button>
-          )}
-
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden text-gray-700 dark:text-gray-200"
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+        {/* Mobile menu */}
+        <div className="md:hidden flex items-center gap-2">
+          <button onClick={() => setMenuOpen((s) => !s)} className="text-white p-2">
+            {!menuOpen ? <Menu size={24} /> : <X size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 pb-6 pt-2"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden bg-[#5e4e3a] border-t border-white/10 text-white shadow-lg overflow-hidden"
           >
-            <nav className="flex flex-col gap-2 text-sm">
+            <nav className="flex flex-col p-4 gap-2">
               {navItems.map((item) => (
                 <NavLink
-                  key={item.path}
-                  to={item.path}
+                  key={item.to}
+                  to={item.to}
                   className={({ isActive }) =>
-                    `py-2 transition-colors ${
-                      isActive
-                        ? "text-brand-primary font-semibold"
-                        : "text-gray-700 dark:text-gray-300 hover:text-brand-primary"
-                    }`
+                    cn("px-4 py-3 rounded-lg transition-colors", {
+                      "bg-white/20 text-white font-medium": isActive,
+                      "text-white/80 hover:bg-white/10": !isActive
+                    })
                   }
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    window.scrollTo({ top: 0 });
+                  }}
                 >
                   {item.name}
                 </NavLink>
               ))}
+              <div className="h-px bg-white/10 my-2" />
+              <div className="flex items-center justify-between px-2">
+                <button onClick={() => { toggleTheme(); setMenuOpen(false); }} className="flex items-center gap-2 text-white/80 hover:text-white py-2">
+                  {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+                  <span>Tema</span>
+                </button>
+                <button onClick={() => { navigate("/carrinho"); setMenuOpen(false); }} className="flex items-center gap-2 text-white/80 hover:text-white py-2 relative">
+                  <ShoppingBag size={18} />
+                  <span>Carrinho ({cart ? cart.length : 0})</span>
+                </button>
+              </div>
             </nav>
           </motion.div>
         )}

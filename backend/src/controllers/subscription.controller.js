@@ -1,316 +1,215 @@
-import prisma from "../config/db.js";
-import dotenv from "dotenv";
-import { sendPaymentConfirmationEmail, sendPaymentFailureEmail } from '../utils/emailService.js';
-
-dotenv.config();
-
-/**
- * Return available plans (static for now)
- */
-export async function listPlans(req, res, next) {
-  res.json([
-    { id: "monthly-1", title: "Clube Mensal - 1 vela", price: 59.9 },
-    { id: "quarter-1", title: "Clube Trimestral - 3 meses", price: 169.9 },
-  ]);
-}
-
-/**
- * Create a subscription using Mercado Pago Subscriptions API (recurring billing)
- * 
- * Flow:
- * 1. Receive card token from frontend
- * 2. Create Subscription record in DB (status: pending)
- * 3. Call Mercado Pago Subscriptions API to create recurring agreement
- * 4. Store subscription ID from MP in DB
- * 5. Automatic first charge happens on MP side
- * 
- * NOTE: This is different from Checkout Pro - subscriptions are recurring,
- * not one-time redirects.
- */
-export async function createSubscription(req, res, next) {
+// ADMIN: Listar todas as assinaturas
+export const getAllSubscriptionsAdmin = async (req, res, next) => {
   try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
+    const subscriptions = await prisma.subscription.findMany({
+      include: {
+        user: true,
+        plan: true,
+        history: {
+          orderBy: { createdAt: 'desc' },
+          take: 5 // Últimos 5 eventos para lista
+        }
+      },
+      orderBy: { startedAt: 'desc' },
+    });
+    res.json(subscriptions);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    const { planId, cardToken } = req.body;
-    if (!planId) return res.status(400).json({ error: 'planId is required' });
-    if (!cardToken) return res.status(400).json({ error: 'cardToken is required' });
-
-    // Map planId to plan details
-    const plans = {
-      'monthly-1': { title: 'Clube Mensal - 1 vela', price: 59.9, frequency: 'months', frequency_type: 1 },
-      'quarter-1': { title: 'Clube Trimestral - 3 meses', price: 169.9, frequency: 'months', frequency_type: 3 },
-    };
-    const plan = plans[planId];
-    if (!plan) return res.status(400).json({ error: 'Plano inválido' });
-
-    // Create subscription record in DB (status: pending)
-    const subscription = await prisma.subscription.create({
-      data: {
-        userId: user.id,
-        planId,
-        status: 'pending',
+// ADMIN: Buscar assinatura por ID
+export const getSubscriptionByIdAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        user: true,
+        plan: true,
+        history: {
+          orderBy: { createdAt: 'desc' }
+        }
       },
     });
+    if (!subscription) return res.status(404).json({ message: 'Assinatura não encontrada.' });
+    res.json(subscription);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    // Call Mercado Pago Subscriptions API to create recurring agreement
-    const subToken = process.env.MERCADOPAGO_ACCESS_TOKEN_SUBS || process.env.MERCADOPAGO_ACCESS_TOKEN;
-    
-    const mpRes = await fetch('https://api.mercadopago.com/v1/subscriptions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${subToken}`,
-      },
-      body: JSON.stringify({
-        reason: plan.title,
-        external_reference: `SUB-${subscription.id}`,
-        payer_email: user.email,
-        card_token_id: cardToken,
-        auto_recurring: {
-          frequency: plan.frequency_type,
-          frequency_type: plan.frequency, // 'days', 'weeks', 'months', 'years'
-          start_date: new Date().toISOString(),
-          end_date: null, // null = indefinite
-          transaction_amount: Number(plan.price.toFixed(2)),
-          currency_id: 'BRL',
-        },
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/subscription/success`,
-          failure: `${process.env.FRONTEND_URL}/subscription/failure`,
-          pending: `${process.env.FRONTEND_URL}/subscription/pending`,
-        },
-        notification_url: `${process.env.API_URL}/api/subscriptions/webhook`,
-      }),
+// ADMIN: Editar assinatura
+export const updateSubscriptionAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, planId, shippingAddress, preferences } = req.body;
+    const updated = await prisma.subscription.update({
+      where: { id: parseInt(id) },
+      data: { status, planId, shippingAddress, preferences },
+    });
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ADMIN: Deletar assinatura
+export const deleteSubscriptionAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.subscription.delete({ where: { id: parseInt(id) } });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+import { MercadoPagoConfig, PreApproval } from 'mercadopago';
+import { prisma } from '../lib/prisma.js';
+
+// Get Mercado Pago subscription access token with fallback logic
+const mpSubscriptionToken =
+  process.env.MERCADOPAGO_ACCESS_TOKEN_SUBS ||
+  process.env.MERCADOPAGO_ACCESS_TOKEN;
+
+// Configura o Mercado Pago
+const client = new MercadoPagoConfig({
+  accessToken: mpSubscriptionToken,
+});
+const preapproval = new PreApproval(client);
+
+// Criar uma nova assinatura
+export const createSubscription = async (req, res, next) => {
+  try {
+    const { planId, shippingAddress, preferences } = req.body;
+    const userId = req.user.id;
+
+    // Buscar o plano
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
     });
 
-    const mpData = await mpRes.json();
-
-    if (!mpRes.ok) {
-      console.error('❌ Erro ao criar assinatura no Mercado Pago:', mpData);
-      
-      // Update subscription status to failed
-      await prisma.subscription.update({
-        where: { id: subscription.id },
-        data: { status: 'failed' },
-      });
-
-      return res.status(400).json({ 
-        error: 'Erro ao criar assinatura', 
-        details: mpData 
-      });
+    if (!plan || !plan.isActive) {
+      return res.status(404).json({ message: 'Plano não encontrado ou inativo.' });
     }
 
-    // Subscription created successfully in MP
-    // Update DB subscription with MP subscription ID and status
-    const mpSubscriptionId = mpData.id;
-    const mpStatus = mpData.status;
+    // Criar PreApproval no Mercado Pago
+    const preApprovalData = {
+      reason: `Assinatura - ${plan.name}`,
+      auto_recurring: {
+        frequency: plan.billingFrequency || 1, // 1 = monthly
+        frequency_type: 'months',
+        transaction_amount: parseFloat(plan.price),
+        currency_id: 'BRL',
+      },
+      back_url: `${process.env.FRONTEND_URL}/subscription/success`,
+      payer_email: req.user.email,
+    };
 
-    // Map MP status to our status
-    let localStatus = 'pending';
-    if (mpStatus === 'authorized' || mpStatus === 'active') {
-      localStatus = 'active';
-    } else if (mpStatus === 'pending') {
-      localStatus = 'pending';
-    } else if (mpStatus === 'cancelled' || mpStatus === 'rejected') {
-      localStatus = 'failed';
+    const mpResponse = await preapproval.create({ body: preApprovalData });
+
+    // Criar assinatura no banco de dados
+    const subscription = await prisma.subscription.create({
+      data: {
+        userId,
+        planId: planId,
+        status: 'pending', // Will be updated via webhook when user approves
+        mpSubscriptionId: mpResponse.id,
+        shippingAddress: shippingAddress || null,
+        preferences: preferences || null,
+        startedAt: null, // Will be set when approved
+      },
+      include: { plan: true },
+    });
+
+    // Retornar URL de aprovação
+    res.json({
+      subscription,
+      approvalUrl: mpResponse.init_point, // URL para o usuário aprovar
+      subscriptionId: mpResponse.id,
+    });
+  } catch (error) {
+    console.error('Error creating subscription:', error);
+    next(error);
+  }
+};
+
+// Buscar todas as assinaturas do usuário logado
+export const getMySubscriptions = async (req, res, next) => {
+  try {
+    const subscriptions = await prisma.subscription.findMany({
+      where: { userId: req.user.id },
+      include: { plan: true },
+      orderBy: { startedAt: 'desc' },
+    });
+    res.json(subscriptions);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Atualizar uma assinatura (status, plano, etc.)
+export const updateSubscription = async (req, res, next) => {
+  try {
+    const { subscriptionId } = req.params;
+    const { status, planId, shippingAddress, preferences } = req.body;
+
+    const subscription = await prisma.subscription.findFirst({
+      where: { id: parseInt(subscriptionId), userId: req.user.id },
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ message: 'Assinatura não encontrada.' });
+    }
+
+    // Lógica para interagir com o Mercado Pago (pausar, reativar, etc.)
+    if (status && subscription.mpSubscriptionId) {
+      await preapproval.update({
+        id: subscription.mpSubscriptionId,
+        body: { status: status === 'paused' ? 'paused' : 'authorized' },
+      });
     }
 
     const updatedSubscription = await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: {
-        mpSubscriptionId,
-        status: localStatus,
-      },
+      where: { id: parseInt(subscriptionId) },
+      data: { status, planId, shippingAddress, preferences },
     });
 
-    console.log(`✅ Assinatura criada: ID=${mpSubscriptionId}, Status=${mpStatus}`);
-
-    // Send confirmation email if subscription is active
-    if (localStatus === 'active') {
-      const user_data = await prisma.user.findUnique({ where: { id: user.id } });
-      // You may want to send a subscription confirmation email here
-      // await sendSubscriptionConfirmationEmail(updatedSubscription, user_data, plan);
-    }
-
-    res.json({ 
-      subscription: updatedSubscription, 
-      mpSubscription: mpData 
-    });
-  } catch (err) {
-    console.error('❌ Erro ao criar assinatura:', err);
-    next(err);
+    res.json(updatedSubscription);
+  } catch (error) {
+    next(error);
   }
-}
+};
 
-/**
- * Webhook handler for Mercado Pago subscription charge notifications
- */
-export async function subscriptionWebhook(req, res) {
+// Cancelar uma assinatura
+export const cancelSubscription = async (req, res, next) => {
   try {
-    const { type, data } = req.body;
+    const { subscriptionId } = req.params;
+    const subscription = await prisma.subscription.findFirst({
+      where: { id: parseInt(subscriptionId), userId: req.user.id },
+    });
 
-    console.log('🔔 Webhook Subscriptions recebido:', { type, data });
-
-    if (!type || !data) {
-      return res.status(400).json({ error: 'Invalid webhook payload' });
+    if (!subscription) {
+      return res.status(404).json({ message: 'Assinatura não encontrada.' });
     }
 
-    // Handle different event types
-    if (type === 'charge.succeeded') {
-      // Charge was successful
-      const chargeId = data.id;
-      const subscriptionId = data.subscription_id;
-      const status = data.status;
-
-      console.log(`✅ Cobrança bem-sucedida: ${chargeId} (Assinatura: ${subscriptionId})`);
-
-      // Update subscription status if needed
-      if (subscriptionId) {
-        await prisma.subscription.updateMany({
-          where: { mpSubscriptionId: subscriptionId.toString() },
-          data: { status: 'active' },
-        });
-      }
-
-      return res.status(200).json({ received: true });
-    }
-
-    if (type === 'charge.failed') {
-      // Charge failed
-      const chargeId = data.id;
-      const subscriptionId = data.subscription_id;
-
-      console.log(`❌ Cobrança falhou: ${chargeId} (Assinatura: ${subscriptionId})`);
-
-      if (subscriptionId) {
-        await prisma.subscription.updateMany({
-          where: { mpSubscriptionId: subscriptionId.toString() },
-          data: { status: 'failed' },
-        });
-      }
-
-      return res.status(200).json({ received: true });
-    }
-
-    if (type === 'subscription.cancelled') {
-      const subscriptionId = data.id;
-
-      console.log(`🚫 Assinatura cancelada: ${subscriptionId}`);
-
-      await prisma.subscription.updateMany({
-        where: { mpSubscriptionId: subscriptionId.toString() },
-        data: { status: 'cancelled' },
+    if (subscription.mpSubscriptionId) {
+      await preapproval.update({
+        id: subscription.mpSubscriptionId,
+        body: { status: 'cancelled' },
       });
-
-      return res.status(200).json({ received: true });
     }
 
-    // Other event types can be logged but not acted upon
-    console.log(`⚠️ Tipo de evento não tratado: ${type}`);
-    return res.status(200).json({ received: true });
-
-  } catch (err) {
-    console.error('❌ Erro ao processar webhook de assinatura:', err);
-    return res.status(200).json({ error: err.message });
-  }
-}
-
-/**
- * Get subscription details
- */
-export async function getSubscription(req, res, next) {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const { subscriptionId } = req.params;
-    if (!subscriptionId) return res.status(400).json({ error: 'subscriptionId is required' });
-
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        id: parseInt(subscriptionId),
-        userId: user.id,
-      },
-    });
-
-    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
-
-    res.json(subscription);
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * List user subscriptions
- */
-export async function listSubscriptions(req, res, next) {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const subscriptions = await prisma.subscription.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    res.json(subscriptions);
-  } catch (err) {
-    next(err);
-  }
-}
-
-/**
- * Cancel subscription
- */
-export async function cancelSubscription(req, res, next) {
-  try {
-    const user = req.user;
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const { subscriptionId } = req.params;
-    if (!subscriptionId) return res.status(400).json({ error: 'subscriptionId is required' });
-
-    const subscription = await prisma.subscription.findFirst({
-      where: {
-        id: parseInt(subscriptionId),
-        userId: user.id,
-      },
-    });
-
-    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
-    if (!subscription.mpSubscriptionId) return res.status(400).json({ error: 'MP subscription ID not found' });
-
-    // Call Mercado Pago to cancel subscription
-    const subToken = process.env.MERCADOPAGO_ACCESS_TOKEN_SUBS || process.env.MERCADOPAGO_ACCESS_TOKEN;
-
-    const cancelRes = await fetch(
-      `https://api.mercadopago.com/v1/subscriptions/${subscription.mpSubscriptionId}`,
-      {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${subToken}`,
-        },
-      }
-    );
-
-    if (!cancelRes.ok) {
-      const errData = await cancelRes.json();
-      return res.status(400).json({ error: 'Erro ao cancelar assinatura', details: errData });
-    }
-
-    // Update local subscription status
-    const updated = await prisma.subscription.update({
-      where: { id: subscription.id },
+    await prisma.subscription.update({
+      where: { id: parseInt(subscriptionId) },
       data: { status: 'cancelled' },
     });
 
-    console.log(`✅ Assinatura cancelada: ${subscription.mpSubscriptionId}`);
-
-    res.json({ message: 'Subscription cancelled', subscription: updated });
-  } catch (err) {
-    next(err);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
   }
-}
+};
+
+
 

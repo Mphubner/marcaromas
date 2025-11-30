@@ -1,25 +1,24 @@
 import express from "express";
 import {
   getCart,
-  addItem,
-  updateItem,
-  removeItem,
+  addItemToCart,
+  updateCartItem,
+  removeCartItem,
   clearCart,
-  echoCart,
 } from "../controllers/cart.controller.js";
-import { optionalAuth } from "../middlewares/authOptional.js";
+import { authOptional } from "../middlewares/authOptional.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-// For server-side cart we require authentication to persist a user cart.
-// GET returns empty array for unauthenticated users (frontend will use localStorage fallback).
-router.get("/", optionalAuth, getCart);
-router.post("/items", optionalAuth, addItem);
-router.patch("/items/:itemId", optionalAuth, updateItem);
-router.delete("/items/:itemId", optionalAuth, removeItem);
-router.delete("/", optionalAuth, clearCart);
+// Rota para buscar o carrinho (usuário pode estar logado ou não)
+router.get("/", authOptional, getCart);
 
-// Keep echo for backwards compatibility
-router.post("/echo", echoCart);
+// Rotas que exigem autenticação
+router.post("/items", authMiddleware, addItemToCart);
+router.patch("/items/:itemId", authMiddleware, updateCartItem);
+router.delete("/items/:itemId", authMiddleware, removeCartItem);
+router.delete("/", authMiddleware, clearCart);
 
 export default router;
+

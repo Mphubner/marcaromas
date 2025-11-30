@@ -20,9 +20,9 @@ export default function Footer() {
             Navegação
           </h4>
           <nav className="flex flex-col gap-1 text-sm">
-            <Link to="/clube">Clube</Link>
-            <Link to="/loja">Loja</Link>
-            <Link to="/blog">Blog</Link>
+            <Link to="/clube">Marc Club</Link>
+            <Link to="/loja">Marc Store</Link>
+            <Link to="/aromaterapia">Essenza Blog</Link>
             <Link to="/sobre">Sobre</Link>
           </nav>
         </div>

@@ -1,17 +1,23 @@
-import express from "express";
-import { createPreference, mpWebhook } from "../controllers/payment.controller.js";
+import express from 'express';
+import { createPaymentPreference, createPixPayment, createTransparentPayment, checkPaymentStatus, getPaymentStatus } from '../controllers/payment.controller.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Rota para criar a preferência de pagamento (protegida)
-router.post("/create-preference", authMiddleware, createPreference);
+// Checkout Pro (redirect to MP)
+router.post('/create-preference', authMiddleware, createPaymentPreference);
 
-// Rota para pagamento com cartão (checkout transparente)
-import { payWithCard } from "../controllers/payment.controller.js";
-router.post("/pay", authMiddleware, payWithCard);
+// Transparent Checkout (card tokenized in frontend)
+router.post('/create-transparent', authMiddleware, createTransparentPayment);
 
-// Rota para receber webhooks do Mercado Pago
-router.post("/webhook", express.raw({ type: "application/json" }), mpWebhook);
+// PIX payment  
+router.post('/create-pix', authMiddleware, createPixPayment);
+
+// Check payment status (for PIX polling)
+router.get('/check/:paymentId', authMiddleware, checkPaymentStatus);
+
+// Get order payment status
+router.get('/status/:orderId', authMiddleware, getPaymentStatus);
 
 export default router;
+

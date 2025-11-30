@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
-import { Button } from "../components/ui/button.jsx";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card.jsx";
-import Input from "../components/ui/input.jsx";
-import Label from "../components/ui/label.jsx";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "../context/AuthContext";
 import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, register, googleLogin, user } = useAuth();
+  const { login, register, googleLoginWithToken, user } = useAuth();
 
   const [mode, setMode] = useState("login"); // "login" or "register"
   const [loading, setLoading] = useState(false);
@@ -23,8 +23,9 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   React.useEffect(() => {
+    const redirectPath = new URLSearchParams(window.location.search).get('redirect') || '/loja';
     if (user) {
-      navigate("/loja");
+      navigate(redirectPath);
     }
   }, [user, navigate]);
 
@@ -42,7 +43,7 @@ export default function LoginPage() {
 
     const result = await login(formData.email, formData.password);
     if (result.success) {
-      navigate("/loja");
+      navigate(redirectPath);
     } else {
       setError(result.error);
     }
@@ -62,7 +63,7 @@ export default function LoginPage() {
 
     const result = await register(formData.name, formData.email, formData.password);
     if (result.success) {
-      navigate("/loja");
+      navigate(redirectPath);
     } else {
       setError(result.error);
     }
@@ -159,7 +160,14 @@ export default function LoginPage() {
             </div>
 
             <div className="mb-4">
-              <GoogleSignInButton />
+              <GoogleSignInButton
+                onSuccess={(credentialResponse) => {
+                  googleLoginWithToken(credentialResponse.credential);
+                }}
+                onError={() => {
+                  setError("Falha no login com o Google.");
+                }}
+              />
             </div>
 
             <p className="text-center text-sm text-gray-600 mt-6">

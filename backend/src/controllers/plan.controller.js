@@ -1,52 +1,82 @@
-import * as PlanService from "../services/plan.service.js";
+import { prisma } from '../lib/prisma.js';
 
-export const getPlans = async (req, res) => {
+export const getAllPlans = async (req, res, next) => {
   try {
-    const plans = [
-      {
-        id: 1,
-        name: "Essencial",
-        price: 89.9,
-        description: "1 vela artesanal + mimo surpresa + frete grátis.",
-        features: ["100% natural", "Feito à mão", "Entrega mensal"],
-      },
-      {
-        id: 2,
-        name: "Premium",
-        price: 129.9,
-        description: "2 velas + incenso + item extra de bem-estar.",
-        features: ["Aromas exclusivos", "Cancelamento flexível", "Brinde mensal"],
-      },
-      {
-        id: 3,
-        name: "Luxury",
-        price: 189.9,
-        description: "3 velas grandes + difusor + presente especial.",
-        features: ["Box de luxo", "Curadoria personalizada", "Edição limitada"],
-      },
-    ];
-
+    const plans = await prisma.plan.findMany({
+      where: { is_active: true },
+      orderBy: { price: 'asc' },
+    });
     res.json(plans);
   } catch (error) {
-    console.error("Erro ao carregar planos:", error);
-    res.status(500).json({ message: "Erro ao carregar planos de assinatura" });
+    next(error);
   }
 };
 
-export const getPlanById = async (req, res) => {
+// Admin: listar todos (inclui inativos)
+export const getAllPlansAdmin = async (req, res, next) => {
   try {
-    const plans = [
-      { id: 1, name: "Essencial", price: 89.9, description: "1 vela artesanal + mimo surpresa + frete grátis.", features: ["100% natural", "Feito à mão", "Entrega mensal"] },
-      { id: 2, name: "Premium", price: 129.9, description: "2 velas + incenso + item extra de bem-estar.", features: ["Aromas exclusivos", "Cancelamento flexível", "Brinde mensal"] },
-      { id: 3, name: "Luxury", price: 189.9, description: "3 velas grandes + difusor + presente especial.", features: ["Box de luxo", "Curadoria personalizada", "Edição limitada"] },
-    ];
-
-    const id = parseInt(req.params.id, 10);
-    const plan = plans.find(p => p.id === id);
-    if (!plan) return res.status(404).json({ message: 'Plano não encontrado' });
-    res.json(plan);
-  } catch (error) {
-    console.error('Erro ao buscar plano:', error);
-    res.status(500).json({ message: 'Erro ao carregar plano' });
+    const plans = await prisma.plan.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(plans);
+  } catch (err) {
+    next(err);
   }
 };
+
+export const getPlanById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const plan = await prisma.plan.findUnique({ where: { id } });
+    if (!plan) return res.status(404).json({ message: 'Plan not found' });
+    res.json(plan);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const createPlan = async (req, res, next) => {
+  try {
+    const payload = req.body || {};
+    const newPlan = await prisma.plan.create({ data: payload });
+    res.status(201).json(newPlan);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updatePlan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await prisma.plan.update({ where: { id }, data: req.body });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deletePlan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.plan.delete({ where: { id } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Toggle plan active status (pause/activate)
+export const togglePlanStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const plan = await prisma.plan.findUnique({ where: { id } });
+    if (!plan) return res.status(404).json({ message: 'Plan not found' });
+
+    const updated = await prisma.plan.update({
+      where: { id },
+      data: { is_active: !plan.is_active }
+    });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+

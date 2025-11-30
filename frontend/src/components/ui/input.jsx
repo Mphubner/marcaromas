@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Input({ label, ...props }) {
+export function Input({ label, ...props }) {
   return (
     <label className="block mb-3">
       {label && (

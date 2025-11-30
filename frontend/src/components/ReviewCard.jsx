@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Card, CardContent } from './ui/card.jsx';
-import StarRating from './ui/starRating.jsx';
+import { Card, CardContent } from '@/components/ui/card';
+import StarRating from '@/components/ui/starRating';
 import { User } from 'lucide-react';
 
 /**
@@ -10,13 +10,13 @@ import { User } from 'lucide-react';
  * @component
  * @example
  * <ReviewCard 
- *   review={{ rating: 5, title: "Ótimo produto!", comment: "Adorei!", user_email: "client@example.com" }} 
+ *   review={{ rating: 5, title: "Ótimo produto!", comment: "Adorei!", userEmail: "client@example.com" }} 
  *   index={0} 
  * />
  */
 const ReviewCard = ({ review, index = 0 }) => {
-  const initials = review.user_email
-    ? review.user_email.split('@')[0].slice(0, 2).toUpperCase()
+  const initials = review.userEmail
+    ? review.userEmail.split('@')[0].slice(0, 2).toUpperCase()
     : 'AC';
 
   return (
@@ -53,11 +53,8 @@ const ReviewCard = ({ review, index = 0 }) => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-gray-600 truncate">
-                {review.user_email ? review.user_email.split('@')[0] : 'Anônimo'}
+                {review.userEmail ? review.userEmail.split('@')[0] : 'Anônimo'}
               </p>
-              {review.user_name && (
-                <p className="text-xs text-gray-500 truncate">{review.user_name}</p>
-              )}
             </div>
           </div>
         </CardContent>

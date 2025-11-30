@@ -19,8 +19,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-
-    /* AS CONFIGURAÇÕES DE ALIAS 'baseUrl' E 'paths' FORAM REMOVIDAS */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
 
     /* Adicionado para aceitar arquivos .jsx */
     "allowJs": true 

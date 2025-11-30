@@ -1,55 +1,45 @@
 import React, { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import ReactMarkdown from "react-markdown";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card.jsx";
-
-// --- CAMINHOS CORRIGIDOS (Relativos) ---
-import { API_URL } from "../utils/api.js";
-import { Button } from "../components/ui/button.jsx";
-import { Badge } from "../components/ui/badge.jsx";
-
-// Icons
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Calendar, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-// Hook para buscar um post
-const useBlogPost = (slug) => {
-  return useQuery({
-    queryKey: ["blog-post", slug],
-    queryFn: async () => {
-      // No backend, vamos buscar pelo slug
-      const res = await fetch(`${API_URL}/api/blog-posts/${slug}`);
-      if (!res.ok) throw new Error("Post não encontrado");
-      return res.json();
-    },
+// Block Renderer
+import BlockRenderer from "@/components/content/blocks/BlockRenderer";
+
+// Content Service
+import contentService from "../services/contentService";
+
+// SEO
+import SEOHead from "@/components/shared/SEOHead";
+
+export default function BlogPost() {
+  const { slug } = useParams();
+
+  const { data: post, isLoading } = useQuery({
+    queryKey: ["content", slug],
+    queryFn: () => contentService.getBySlug(slug),
     enabled: !!slug,
   });
-};
 
-export default function BlogPostPage() {
-  const { slug } = useParams(); // Pega o ':slug' da URL
-  const { data: post, isLoading, isError } = useBlogPost(slug);
-
-  // Define o título da aba do navegador
-  useEffect(() => {
-    if (post) {
-      document.title = `${post.title} | Marc Aromas`;
-    }
-  }, [post]);
+  // useEffect for title removed in favor of SEOHead
 
   const categoryColors = {
     aromatherapy: "bg-purple-100 text-purple-800",
     self_care: "bg-pink-100 text-pink-800",
     wellness: "bg-green-100 text-green-800",
+    behind_scenes: "bg-blue-100 text-blue-800"
   };
-  
+
   const categories = {
     aromatherapy: "Aromaterapia",
     self_care: "Autocuidado",
     wellness: "Bem-estar",
+    behind_scenes: "Bastidores"
   };
 
   const handleShare = () => {
@@ -68,12 +58,12 @@ export default function BlogPostPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B7355]" />
       </div>
     );
   }
 
-  if (isError || !post) {
+  if (!post) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -102,7 +92,7 @@ export default function BlogPostPage() {
 
       {/* Cover Image */}
       {post.cover_image && (
-        <section className="relative h-[50vh] md:h-[60vh] overflow-hidden bg-gradient-to-br from-brand-primary to-brand-accent">
+        <section className="relative h-[50vh] md:h-[60vh] overflow-hidden bg-gradient-to-br from-[#8B7355] to-[#D4A574]">
           <img
             src={post.cover_image}
             alt={post.title}
@@ -112,12 +102,24 @@ export default function BlogPostPage() {
       )}
 
       {/* Article Content */}
-      <article className="py-12 bg-white">
+      <article className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
+            <SEOHead
+              title={post.seo_title || post.title}
+              description={post.seo_description || post.excerpt}
+              image={post.cover_image}
+              type="article"
+              publishedTime={post.publish_date}
+              modifiedTime={post.updated_at}
+              author={post.author?.name}
+              section={post.category}
+              tags={post.seo_keywords?.length > 0 ? post.seo_keywords : post.tags}
+            />
+
             {/* Category and Date */}
             <div className="flex items-center gap-4 mb-6">
               {post.category && (
@@ -134,13 +136,13 @@ export default function BlogPostPage() {
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl md:text-5xl font-bold text-brand-dark mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#2C2419] mb-6 leading-tight">
               {post.title}
             </h1>
 
             {/* Excerpt */}
             {post.excerpt && (
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed border-l-4 border-brand-primary pl-6 italic">
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed border-l-4 border-[#8B7355] pl-6 italic">
                 {post.excerpt}
               </p>
             )}
@@ -154,16 +156,29 @@ export default function BlogPostPage() {
             </div>
 
             {/* Content */}
-            <div className="prose prose-lg max-w-none prose-headings:text-brand-dark prose-a:text-brand-primary prose-strong:text-brand-dark">
-              <ReactMarkdown>{post.content}</ReactMarkdown>
+            <div className="prose prose-lg max-w-none">
+              <BlockRenderer blocks={post.blocks} />
             </div>
 
+            {/* Tags */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="mt-12 pt-8 border-t">
+                <h3 className="text-sm font-semibold text-gray-500 mb-4">Tags:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="bg-gray-50">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </article>
 
       {/* CTA */}
-      <section className="py-20 bg-gradient-to-br from-brand-primary to-brand-dark text-white">
+      <section className="py-20 bg-gradient-to-br from-[#8B7355] to-[#6B5845] text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Gostou do conteúdo?
@@ -172,7 +187,7 @@ export default function BlogPostPage() {
             Faça parte do Clube Marc Aromas e receba velas exclusivas todo mês
           </p>
           <Link to="/clube">
-            <Button size="lg" variant="secondary" className="bg-white text-brand-primary hover:bg-gray-100">
+            <Button size="lg" variant="secondary" className="bg-white text-[#8B7355] hover:bg-gray-100">
               Conhecer o Clube
             </Button>
           </Link>

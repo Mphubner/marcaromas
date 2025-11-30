@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Gift, Send } from "lucide-react";
-import Button from "./ui/button";
-import Input from "./ui/input";
-import Textarea from "./ui/textarea";
-import { API_URL } from "../utils/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
+import api from "../lib/api";
 
 export default function GiftSubscriptionForm() {
   const [form, setForm] = useState({
@@ -22,11 +22,7 @@ export default function GiftSubscriptionForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      await fetch(`${API_URL}/api/gifts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      await api.post('/gifts', form);
       setSent(true);
     } catch {
       alert("Erro ao enviar o presente.");
