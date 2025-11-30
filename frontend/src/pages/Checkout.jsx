@@ -3,12 +3,12 @@ import { useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { buscarEnderecoPorCEP } from '../utils/viacep';
-import { API_URL } from '../utils/api';
+import { API_URL } from '../lib/api';
 
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import Input from '../components/ui/input';
-import Label from '../components/ui/label';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { Loader2, Lock } from 'lucide-react';
 import CardPaymentForm from '../components/CardPaymentForm';
 
@@ -19,10 +19,10 @@ export default function CheckoutPage() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const planId = params.get('plan');
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const [endereco, setEndereco] = useState({
     cep: '',
     rua: '',
@@ -192,7 +192,7 @@ export default function CheckoutPage() {
                   <Input id="bairro" name="bairro" value={endereco.bairro ?? ''} onChange={handleInputChange} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                   <div className="col-span-2">
+                  <div className="col-span-2">
                     <Label htmlFor="cidade">Cidade</Label>
                     <Input id="cidade" name="cidade" value={endereco.cidade ?? ''} onChange={handleInputChange} />
                   </div>
