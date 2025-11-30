@@ -130,7 +130,7 @@ export default function Home() {
           >
             <Sparkles className="w-8 h-8 text-[#8B7355] mx-auto mb-4" />
             <h2 className="text-3xl md:text-4xl font-bold text-[#2C2419] mb-6 font-playfair">
-              Mais que uma vela, um ritual mensal
+              Mais que uma vela, um hábito na sua rotina
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed">
               O Marc Club é o primeiro clube de assinatura de velas artesanais premium do Brasil.
@@ -313,7 +313,7 @@ export default function Home() {
                           <Star className="w-5 h-5" />
                         </div>
                         <div>
-                          <p className="font-bold text-sm">Ritual do Mês</p>
+                          <p className="font-bold text-sm">Rotina do Mês</p>
                           <p className="text-xs opacity-70">Dicas exclusivas</p>
                         </div>
                       </div>

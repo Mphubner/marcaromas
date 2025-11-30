@@ -47,7 +47,7 @@ export default function ImageUploadMultiple({
                 formData.append('image', file);
 
                 try {
-                    const { data } = await api.post('/upload', formData, {
+                    const { data } = await api.post('/uploads', formData, {
                         headers: { 'Content-Type': 'multipart/form-data' }
                     });
                     uploadedUrls.push(data.url);
@@ -88,8 +88,8 @@ export default function ImageUploadMultiple({
                 <div
                     {...getRootProps()}
                     className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isDragActive
-                            ? 'border-[#8B7355] bg-[#8B7355]/5'
-                            : 'border-gray-300 hover:border-[#8B7355] hover:bg-gray-50'
+                        ? 'border-[#8B7355] bg-[#8B7355]/5'
+                        : 'border-gray-300 hover:border-[#8B7355] hover:bg-gray-50'
                         } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                     <input {...getInputProps()} />

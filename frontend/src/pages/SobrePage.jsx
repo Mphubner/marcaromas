@@ -144,15 +144,15 @@ export default function Sobre() {
             </p>
             <div className="grid md:grid-cols-3 gap-8 mt-12">
               <div>
-                <p className="text-4xl font-bold mb-2">10k+</p>
+                <p className="text-4xl font-bold mb-2">2k+</p>
                 <p className="text-sm opacity-80">Velas Enviadas</p>
               </div>
               <div>
-                <p className="text-4xl font-bold mb-2">2k+</p>
-                <p className="text-sm opacity-80">Assinantes Felizes</p>
+                <p className="text-4xl font-bold mb-2">1k+</p>
+                <p className="text-sm opacity-80">Clientes Felizes</p>
               </div>
               <div>
-                <p className="text-4xl font-bold mb-2">98%</p>
+                <p className="text-4xl font-bold mb-2">99%</p>
                 <p className="text-sm opacity-80">Satisfação</p>
               </div>
             </div>
