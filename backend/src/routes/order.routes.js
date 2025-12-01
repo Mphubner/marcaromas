@@ -23,6 +23,28 @@ router.get('/my-orders', authMiddleware, getMyOrders);
 
 // ============ ADMIN ROUTES ============
 router.get('/', authMiddleware, adminMiddleware, getAllOrders);
+
+// IMPORTANT: Specific routes BEFORE dynamic routes
+// This line must come before /:orderId to prevent 'recent' being treated as an ID
+import { prisma } from '../lib/prisma.js';
+router.get('/recent', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: req.user.isAdmin ? {} : { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: { include: { product: { select: { name: true } } } }
+      }
+    });
+    res.json(orders);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Dynamic route - MUST come after specific routes like /recent
 router.get('/:orderId', authMiddleware, adminMiddleware, getOrderById);
 router.patch('/:orderId', authMiddleware, adminMiddleware, updateOrder);
 
