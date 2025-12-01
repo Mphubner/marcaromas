@@ -1,66 +1,66 @@
-/**
- * @route   POST /api/admin/referrals/programs
- * @desc    Create new referral program
- * @access  Private/Admin
- */
+import express from 'express';
+import {
+    getOverview,
+    getPrograms,
+    createProgram,
+    updateProgram,
+    deleteProgram,
+    getConversions,
+    approveConversion,
+    rejectConversion,
+    batchPayout,
+    getPayouts,
+    processPayout,
+    getTopReferrers,
+    getRevenueTimeline,
+    getSocialMentions,
+    approveSocialMention,
+    rejectSocialMention,
+    // Legacy
+    getAllReferrals,
+    getReferralStats,
+    markReferralAsPaid
+} from '../controllers/adminReferrals.controller.js';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
+import { adminMiddleware } from '../middlewares/adminMiddleware.js';
+
+const router = express.Router();
+
+// All routes require authentication AND admin role
+router.use(authMiddleware);
+router.use(adminMiddleware);
+
+// Overview & Stats
+router.get('/overview', getOverview);
+router.get('/stats', getReferralStats); // Legacy
+
+// Programs Management
+router.get('/programs', getPrograms);
 router.post('/programs', createProgram);
-
-/**
- * @route   PUT /api/admin/referrals/programs/:id
- * @desc    Update referral program
- * @access  Private/Admin
- */
 router.put('/programs/:id', updateProgram);
-
-/**
- * @route   DELETE /api/admin/referrals/programs/:id
- * @desc    Delete referral program
- * @access  Private/Admin
- */
 router.delete('/programs/:id', deleteProgram);
 
-/**
- * @route   GET /api/admin/referrals/conversions
- * @desc    List all conversions with filters
- * @access  Private/Admin
- * @query   status, type, dateFrom, dateTo, minAmount, limit
- */
+// Conversions
 router.get('/conversions', getConversions);
-
-/**
- * @route   POST /api/admin/referrals/conversions/:id/approve
- * @desc    Approve a pending conversion
- * @access  Private/Admin
- */
 router.post('/conversions/:id/approve', approveConversion);
-
-/**
- * @route   POST /api/admin/referrals/conversions/:id/reject
- * @desc    Reject a conversion
- * @access  Private/Admin
- */
 router.post('/conversions/:id/reject', rejectConversion);
 
-/**
- * @route   POST /api/admin/referrals/batch-payout
- * @desc    Process batch payout
- * @access  Private/Admin
- */
+// Analytics
+router.get('/analytics/top-referrers', getTopReferrers);
+router.get('/analytics/revenue-timeline', getRevenueTimeline);
+
+// Payouts
+router.get('/payouts', getPayouts);
+router.post('/payouts/:id/process', processPayout);
 router.post('/batch-payout', batchPayout);
 
-/**
- * @route   GET /api/admin/referrals/payouts
- * @desc    Get all payout requests
- * @access  Private/Admin
- * @query   status
- */
-router.get('/payouts', getPayouts);
+// Social Media
+router.get('/social-mentions', getSocialMentions);
+router.post('/social-mentions/:id/approve', approveSocialMention);
+router.post('/social-mentions/:id/reject', rejectSocialMention);
 
-/**
- * @route   POST /api/admin/referrals/payouts/:id/process
- * @desc    Process a payout request
- * @access  Private/Admin
- */
-router.post('/payouts/:id/process', processPayout);
+// Legacy routes (for backward compatibility)
+router.get('/', getAllReferrals);
+router.post('/:id/mark-paid', markReferralAsPaid);
 
 export default router;

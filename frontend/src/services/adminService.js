@@ -145,7 +145,75 @@ export const adminService = {
     return data;
   },
   markReferralAsPaid: async (referralId) => {
-    const { data } = await api.patch(`/admin/referrals/${referralId}/mark-paid`);
+    const { data } = await api.post(`/admin/referrals/${referralId}/mark-paid`);
+    return data;
+  },
+
+  // Referral Programs
+  getReferralPrograms: async () => {
+    const { data } = await api.get('/admin/referrals/programs');
+    return data;
+  },
+  createReferralProgram: async (programData) => {
+    const { data } = await api.post('/admin/referrals/programs', programData);
+    return data;
+  },
+  updateReferralProgram: async (programId, programData) => {
+    const { data } = await api.put(`/admin/referrals/programs/${programId}`, programData);
+    return data;
+  },
+  deleteReferralProgram: async (programId) => {
+    await api.delete(`/admin/referrals/programs/${programId}`);
+  },
+
+  // Referral Analytics
+  getTopReferrers: async (limit = 10) => {
+    const { data } = await api.get('/admin/referrals/analytics/top-referrers', {
+      params: { limit }
+    });
+    return data;
+  },
+  getRevenueTimeline: async (dateFrom, dateTo) => {
+    const { data } = await api.get('/admin/referrals/analytics/revenue-timeline', {
+      params: { dateFrom, dateTo }
+    });
+    return data;
+  },
+
+  // Referral Payouts
+  getReferralPayouts: async (status) => {
+    const { data } = await api.get('/admin/referrals/payouts', {
+      params: { status }
+    });
+    return data;
+  },
+  processReferralPayout: async (payoutId, notes) => {
+    const { data } = await api.post(`/admin/referrals/payouts/${payoutId}/process`, { notes });
+    return data;
+  },
+  batchProcessPayouts: async (conversionIds, payoutMethod) => {
+    const { data } = await api.post('/admin/referrals/batch-payout', {
+      conversionIds,
+      payoutMethod
+    });
+    return data;
+  },
+
+  // Social Media Mentions
+  getSocialMediaMentions: async (filters) => {
+    const { data } = await api.get('/admin/referrals/social-mentions', {
+      params: filters
+    });
+    return data;
+  },
+  approveSocialMention: async (mentionId, rewardAmount) => {
+    const { data } = await api.post(`/admin/referrals/social-mentions/${mentionId}/approve`, {
+      rewardAmount
+    });
+    return data;
+  },
+  rejectSocialMention: async (mentionId) => {
+    const { data } = await api.post(`/admin/referrals/social-mentions/${mentionId}/reject`);
     return data;
   },
 
