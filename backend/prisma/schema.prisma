@@ -442,6 +442,7 @@ model ScentProfile {
   favorite_notes       String[]
   occasions            String[]
   dislikes             String[]
+  mood_preference      String?
   user                 User     @relation(fields: [userId], references: [id])
 }
 
