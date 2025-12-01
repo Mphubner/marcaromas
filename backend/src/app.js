@@ -1,9 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import dashboardRoutes from "./routes/dashboard.routes.js";
-import achievementRoutes from "./routes/achievement.routes.js";
-import wishlistRoutes from "./routes/wishlist.routes.js";
+import compression from "compression";
 import userRoutes from "./routes/user.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
@@ -11,7 +9,18 @@ import couponRoutes from "./routes/coupon.routes.js";
 import melhorEnvioRoutes from "./routes/melhorenvio.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
-import storeRoutes from "./routes/store.js";
+import pageRoutes from "./routes/page.routes.js";
+import planRoutes from "./routes/plan.routes.js";
+import preferencesRoutes from "./routes/preferences.routes.js";
+import giftRoutes from "./routes/gift.routes.js";
+import pageSettingsRoutes from "./routes/pageSettings.routes.js";
+import boxRoutes from "./routes/box.routes.js";
+import referralsRoutes from "./routes/referrals.routes.js";
+import adminReferralsRoutes from "./routes/adminReferrals.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
+import logsRoutes from "./routes/logs.routes.js";
+import settingsRoutes from "./routes/settings.routes.js";
 import { getCurrentBox } from "./controllers/box.controller.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
@@ -107,6 +116,21 @@ app.get("/api", (req, res) =>
     mode: process.env.NODE_ENV || "development"
   })
 );
+
+app.use("/api/contact", contactRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/address", addressRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/melhor-envio", melhorEnvioRoutes);
+app.use("/api/health", healthRoutes);
+app.use("/api/referrals", referralsRoutes);
+app.use("/api/admin/referrals", adminReferralsRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/uploads", uploadRoutes);
+app.use("/api/logs", logsRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/achievement", achievementRoutes);
 
 app.use(errorHandler);
 
