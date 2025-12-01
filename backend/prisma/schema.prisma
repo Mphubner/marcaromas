@@ -799,34 +799,8 @@ model Content {
   // Reading Stats
   read_time_minutes Int?
   views             Int            @default(0)
-}
 
-model SystemLog {
-  id        String   @id @default(cuid())
-  level     String   // INFO, WARN, ERROR
-  module    String   // AUTH, ORDER, PAYMENT, SYSTEM, etc.
-  message   String
-  metadata  Json?
-  createdAt DateTime @default(now())
 
-  @@index([level])
-  @@index([module])
-  @@index([createdAt])
-}
-
-model WebhookLog {
-  id        String   @id @default(cuid())
-  provider  String   // STRIPE, MERCADOPAGO, ETC
-  event     String
-  payload   Json?
-  status    String   // SUCCESS, FAILED
-  error     String?
-  createdAt DateTime @default(now())
-
-  @@index([provider])
-  @@index([status])
-  @@index([createdAt])
-}
   
   // Relations
   blocks            ContentBlock[]
@@ -960,4 +934,31 @@ model Gift {
   @@index([recipientEmail])
   @@index([status])
   @@index([paymentStatus])
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   // INFO, WARN, ERROR
+  module    String   // AUTH, ORDER, PAYMENT, SYSTEM, etc.
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([module])
+  @@index([createdAt])
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  provider  String   // STRIPE, MERCADOPAGO, ETC
+  event     String
+  payload   Json?
+  status    String   // SUCCESS, FAILED
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
 }
