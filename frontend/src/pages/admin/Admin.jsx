@@ -31,6 +31,8 @@ import ReferralsListPage from "./referrals/ReferralsListPage";
 import ReferralProgramsList from "./referrals/ReferralProgramsList";
 import ReferralProgramConfig from "./referrals/ReferralProgramConfig";
 import ReferralAnalytics from "./referrals/ReferralAnalytics";
+import PayoutManagement from "./referrals/PayoutManagement";
+import SocialMediaMentions from "./referrals/SocialMediaMentions";
 import ConfigurationsPage from "./configurations/ConfigurationsPage";
 
 import ProductListPage from "./ProductListPage";
