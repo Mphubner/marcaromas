@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService } from '@/services/adminService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ export default function ReferralsListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: referrals = [], isLoading } = useQuery({
     queryKey: ['admin-referrals', { search, status: statusFilter }],
@@ -70,7 +72,7 @@ export default function ReferralsListPage() {
             Gerencie o programa de indicações e recompensas
           </p>
         </div>
-        <Button>
+        <Button onClick={() => navigate('/admin/referrals/programs')}>
           <Settings className="w-4 h-4 mr-2" />
           Configurações
         </Button>

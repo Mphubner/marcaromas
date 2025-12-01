@@ -29,7 +29,7 @@ export const getMyDashboard = async (req, res) => {
         // If user doesn't have a code yet, create one
         if (!referralCode) {
             // Get active program
-            const activeProgram = await prisma.referralProgram.findFirst({
+            let activeProgram = await prisma.referralProgram.findFirst({
                 where: { is_active: true },
                 orderBy: { created_at: 'desc' }
             });
