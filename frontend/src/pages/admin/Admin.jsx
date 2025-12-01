@@ -30,6 +30,7 @@ import ReviewsListPage from "./reviews/ReviewsListPage";
 import ReferralsListPage from "./referrals/ReferralsListPage";
 import ReferralProgramsList from "./referrals/ReferralProgramsList";
 import ReferralProgramConfig from "./referrals/ReferralProgramConfig";
+import ReferralAnalytics from "./referrals/ReferralAnalytics";
 import ConfigurationsPage from "./configurations/ConfigurationsPage";
 
 import ProductListPage from "./ProductListPage";
@@ -179,6 +180,7 @@ const Admin = () => {
             <Route path="referrals/programs" element={<ReferralProgramsList />} />
             <Route path="referrals/programs/new" element={<ReferralProgramConfig />} />
             <Route path="referrals/programs/:id/edit" element={<ReferralProgramConfig />} />
+            <Route path="referrals/analytics" element={<ReferralAnalytics />} />
             <Route path="configurations" element={<ConfigurationsPage />} />
 
             <Route path="products" element={<ProductListPage />} />
