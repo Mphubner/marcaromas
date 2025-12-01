@@ -531,3 +531,199 @@ export const processPayout = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+/**
+ * GET /api/admin/referrals/analytics/top-referrers
+ * Get top performing referrers
+ */
+export const getTopReferrers = async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+
+        const topReferrers = await prisma.referralConversion.groupBy({
+            by: ['referrer_user_id'],
+            _sum: {
+                reward_amount: true,
+                transaction_amount: true
+            },
+            _count: {
+                id: true
+            },
+            orderBy: {
+                _sum: {
+                    transaction_amount: 'desc'
+                }
+            },
+            take: parseInt(limit)
+        });
+
+        const formatted = await Promise.all(topReferrers.map(async (item) => {
+            const user = await prisma.user.findUnique({
+                where: { id: item.referrer_user_id },
+                select: { id: true, name: true, email: true }
+            });
+
+            return {
+                user,
+                conversions: item._count.id,
+                totalRevenue: item._sum.transaction_amount || 0,
+                totalEarnings: item._sum.reward_amount || 0
+            };
+        }));
+
+        res.json(formatted);
+
+    } catch (error) {
+        console.error('Error fetching top referrers:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * GET /api/admin/referrals/analytics/revenue-timeline
+ * Get revenue over time
+ */
+export const getRevenueTimeline = async (req, res) => {
+    try {
+        const { dateFrom, dateTo } = req.query;
+
+        const where = {};
+        if (dateFrom || dateTo) {
+            where.created_at = {};
+            if (dateFrom) where.created_at.gte = new Date(dateFrom);
+            if (dateTo) where.created_at.lte = new Date(dateTo);
+        }
+
+        const conversions = await prisma.referralConversion.findMany({
+            where,
+            select: {
+                created_at: true,
+                transaction_amount: true,
+                reward_amount: true
+            },
+            orderBy: { created_at: 'asc' }
+        });
+
+        // Group by day
+        const timeline = {};
+        conversions.forEach(c => {
+            const date = c.created_at.toISOString().split('T')[0];
+            if (!timeline[date]) {
+                timeline[date] = {
+                    date,
+                    revenue: 0,
+                    rewards: 0,
+                    count: 0
+                };
+            }
+            timeline[date].revenue += c.transaction_amount || 0;
+            timeline[date].rewards += c.reward_amount || 0;
+            timeline[date].count += 1;
+        });
+
+        const result = Object.values(timeline).sort((a, b) =>
+            new Date(a.date) - new Date(b.date)
+        );
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('Error fetching revenue timeline:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * GET /api/admin/referrals/social-mentions
+ * Get social media mentions
+ */
+export const getSocialMentions = async (req, res) => {
+    try {
+        const { platform, status } = req.query;
+
+        const where = {};
+        if (platform) where.platform = platform;
+        if (status) where.reward_status = status;
+
+        const mentions = await prisma.socialMediaMention.findMany({
+            where,
+            orderBy: { created_at: 'desc' }
+        });
+
+        // Get user data
+        const formatted = await Promise.all(mentions.map(async (mention) => {
+            const user = await prisma.user.findUnique({
+                where: { id: mention.user_id },
+                select: { id: true, name: true, email: true }
+            });
+
+            return {
+                ...mention,
+                user
+            };
+        }));
+
+        res.json(formatted);
+
+    } catch (error) {
+        console.error('Error fetching social mentions:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * POST /api/admin/referrals/social-mentions/:id/approve
+ * Approve social media mention
+ */
+export const approveSocialMention = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rewardAmount } = req.body;
+
+        const mention = await prisma.socialMediaMention.update({
+            where: { id },
+            data: {
+                reward_status: 'APPROVED',
+                reward_amount: rewardAmount,
+                verified_at: new Date()
+            }
+        });
+
+        res.json({ success: true, mention });
+
+    } catch (error) {
+        console.error('Error approving mention:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * POST /api/admin/referrals/social-mentions/:id/reject
+ * Reject social media mention
+ */
+export const rejectSocialMention = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const mention = await prisma.socialMediaMention.update({
+            where: { id },
+            data: {
+                reward_status: 'CANCELLED',
+                verified_at: new Date()
+            }
+        });
+
+        res.json({ success: true, mention });
+
+    } catch (error) {
+        console.error('Error rejecting mention:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Legacy compatibility
+export const getAllReferrals = getConversions;
+export const getReferralStats = getOverview;
+export const markReferralAsPaid = async (req, res) => {
+    return approveConversion(req, res);
+};
