@@ -7,12 +7,12 @@ export const dashboardService = {
   },
 
   getStats: async () => {
-    const { data } = await api.get('/api/dashboard/stats');
+    const { data } = await api.get('/dashboard/stats');
     return data;
   },
 
   getRecentOrders: async () => {
-    const { data } = await api.get('/api/orders/recent');
+    const { data } = await api.get('/orders/recent');
     return data;
   },
 };
