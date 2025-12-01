@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
+import { supabase, STORAGE_BUCKET } from "../lib/supabase.js";
 
 const UPLOADS_DIR = path.resolve("./uploads");
 
@@ -46,6 +47,33 @@ export async function saveFileLocal(buffer, filename, subDir = '') {
   const filePath = path.join(targetDir, filename);
   await fs.promises.writeFile(filePath, buffer);
   return filePath;
+}
+
+/**
+ * Upload file to Supabase Storage
+ */
+async function uploadToSupabase(buffer, filename, contentType = 'image/webp') {
+  if (!supabase) {
+    throw new Error('Supabase not configured');
+  }
+
+  const { data, error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(filename, buffer, {
+      contentType,
+      upsert: false
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(filename);
+
+  return urlData.publicUrl;
 }
 
 /**
@@ -139,15 +167,45 @@ export async function processAndSaveImage(file, options = {}) {
     .toBuffer();
 
   // Determine subdirectory based on image type
-  const subDir = imageType === 'content' ? 'content' : '';
+  const subDir = imageType === 'content' ? 'content/' : '';
 
-  // Save all versions
-  const webpPath = await saveFileLocal(webpBuffer, webpName, subDir);
-  const jpegPath = await saveFileLocal(jpegBuffer, jpegName, subDir);
-  const mediumPath = await saveFileLocal(mediumBuffer, mediumWebpName, subDir);
-  const thumbnailPath = await saveFileLocal(thumbnailBuffer, thumbnailWebpName, subDir);
+  // Upload to Supabase Storage (or local as fallback)
+  let webpUrl, jpgUrl, mediumUrl, thumbnailUrl;
 
-  const urlPrefix = `/uploads/${subDir ? subDir + '/' : ''}`;
+  try {
+    if (supabase) {
+      // Upload to Supabase Storage
+      webpUrl = await uploadToSupabase(webpBuffer, `${subDir}${webpName}`, 'image/webp');
+      jpgUrl = await uploadToSupabase(jpegBuffer, `${subDir}${jpegName}`, 'image/jpeg');
+      mediumUrl = await uploadToSupabase(mediumBuffer, `${subDir}${mediumWebpName}`, 'image/webp');
+      thumbnailUrl = await uploadToSupabase(thumbnailBuffer, `${subDir}${thumbnailWebpName}`, 'image/webp');
+    } else {
+      // Fallback to local storage
+      const webpPath = await saveFileLocal(webpBuffer, webpName, subDir.replace('/', ''));
+      const jpegPath = await saveFileLocal(jpegBuffer, jpegName, subDir.replace('/', ''));
+      const mediumPath = await saveFileLocal(mediumBuffer, mediumWebpName, subDir.replace('/', ''));
+      const thumbnailPath = await saveFileLocal(thumbnailBuffer, thumbnailWebpName, subDir.replace('/', ''));
+
+      const urlPrefix = `/uploads/${subDir}`;
+      webpUrl = `${urlPrefix}${path.basename(webpPath)}`;
+      jpgUrl = `${urlPrefix}${path.basename(jpegPath)}`;
+      mediumUrl = `${urlPrefix}${path.basename(mediumPath)}`;
+      thumbnailUrl = `${urlPrefix}${path.basename(thumbnailPath)}`;
+    }
+  } catch (error) {
+    console.error('Error uploading to Supabase, falling back to local:', error);
+    // Fallback to local storage on error
+    const webpPath = await saveFileLocal(webpBuffer, webpName, subDir.replace('/', ''));
+    const jpegPath = await saveFileLocal(jpegBuffer, jpegName, subDir.replace('/', ''));
+    const mediumPath = await saveFileLocal(mediumBuffer, mediumWebpName, subDir.replace('/', ''));
+    const thumbnailPath = await saveFileLocal(thumbnailBuffer, thumbnailWebpName, subDir.replace('/', ''));
+
+    const urlPrefix = `/uploads/${subDir}`;
+    webpUrl = `${urlPrefix}${path.basename(webpPath)}`;
+    jpgUrl = `${urlPrefix}${path.basename(jpegPath)}`;
+    mediumUrl = `${urlPrefix}${path.basename(mediumPath)}`;
+    thumbnailUrl = `${urlPrefix}${path.basename(thumbnailPath)}`;
+  }
 
   return {
     originalName: originalname,
@@ -165,10 +223,10 @@ export async function processAndSaveImage(file, options = {}) {
       }
     },
     files: {
-      webp: `${urlPrefix}${path.basename(webpPath)}`,
-      jpg: `${urlPrefix}${path.basename(jpegPath)}`,
-      medium: `${urlPrefix}${path.basename(mediumPath)}`,
-      thumbnail: `${urlPrefix}${path.basename(thumbnailPath)}`,
+      webp: webpUrl,
+      jpg: jpgUrl,
+      medium: mediumUrl,
+      thumbnail: thumbnailUrl,
     },
   };
 }

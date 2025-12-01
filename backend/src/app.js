@@ -112,6 +112,7 @@ app.use("/api/content", contentRoutes);
 import contentVersionRoutes from './routes/contentVersion.routes.js';
 app.use("/api/content", contentVersionRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/achievements", achievementRoutes);
 
 // Serve uploaded files (local storage)
 import path from "path";

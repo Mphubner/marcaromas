@@ -46,10 +46,10 @@ export default function Contato() {
     title: "Vamos Conversar?",
     subtitle: "Estamos aqui para ajudar! Entre em contato e responderemos em até 24 horas.",
     contact_info: {
-      email: "contato@marcaromas.com",
-      phone: "(11) 99999-9999",
-      whatsapp: "(11) 98888-8888",
-      address: "Rua das Flores, 123 - São Paulo, SP"
+      email: "clientmarcaromas@gmail.com",
+      phone: "(27) 98865-0783",
+      whatsapp: "(27) 98865-0783",
+      address: "Rua Henrique Coutinho, 86 - Guarapari, ES"
     }
   };
 
