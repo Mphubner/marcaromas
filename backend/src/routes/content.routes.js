@@ -21,7 +21,9 @@ import {
   reorderBlocks
 } from '../controllers/contentBlock.controller.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
 import { adminMiddleware } from '../middlewares/adminMiddleware.js';
+import { cacheMiddleware } from '../middleware/cache.js';
 
 const router = express.Router();
 
@@ -124,7 +126,7 @@ router.put('/admin/:id/blocks/reorder', reorderBlocks);
  * @access  Public
  * @query   q (required), type, limit, offset
  */
-router.get('/search', searchContent);
+router.get('/search', cacheMiddleware(300), searchContent);
 
 /**
  * @route   GET /api/content
@@ -132,7 +134,7 @@ router.get('/search', searchContent);
  * @access  Public
  * @query   type, category, limit, offset
  */
-router.get('/', getAllContent);
+router.get('/', cacheMiddleware(300), getAllContent);
 
 /**
  * @route   GET /api/content/category/:category
@@ -140,7 +142,7 @@ router.get('/', getAllContent);
  * @access  Public
  * @query   limit, offset
  */
-router.get('/category/:category', getContentByCategory);
+router.get('/category/:category', cacheMiddleware(300), getContentByCategory);
 
 /**
  * @route   GET /api/content/:id/access
@@ -161,6 +163,6 @@ router.post('/:id/view', incrementViews);
  * @desc    Get content by slug (with blocks)
  * @access  Public
  */
-router.get('/:slug', getContentBySlug);
+router.get('/:slug', cacheMiddleware(300), getContentBySlug);
 
 export default router;

@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Home, Sparkles, ShoppingBag, BookOpen, Heart, Mail, User, Package, LogOut, Gift, X, Menu, ShoppingCart, Trophy, Lock, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useSettings } from '../context/SettingsContext';
 import { Toaster } from 'sonner';
 
 const publicPages = [
@@ -30,6 +31,7 @@ const userPages = [
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const { cart } = useCart();
+  const { settings } = useSettings();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -42,14 +44,14 @@ export default function Layout({ children }) {
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-12 h-12 rounded-full overflow-hidden bg-white shadow-sm group-hover:shadow-md transition-shadow">
                 <img
-                  src="/Logo Marc.svg"
-                  alt="Marc Aromas"
+                  src={settings?.general?.logo || "/Logo Marc.svg"}
+                  alt={settings?.general?.storeName || "Marc Aromas"}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-[#8B7355] tracking-wide">Marc Aromas</h1>
-                <p className="text-xs text-[#8B7355]/70 font-medium tracking-wider">Clube de Velas Artesanais</p>
+                <h1 className="text-2xl font-bold text-[#8B7355] tracking-wide">{settings?.general?.storeName || "Marc Aromas"}</h1>
+                <p className="text-xs text-[#8B7355]/70 font-medium tracking-wider">{settings?.general?.description || "Clube de Velas Artesanais"}</p>
               </div>
             </Link>
 
@@ -205,9 +207,9 @@ export default function Layout({ children }) {
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <Sparkles className="text-[#8B7355]" />
-                <span className="font-bold text-lg">Marc Aromas</span>
+                <span className="font-bold text-lg">{settings?.general?.storeName || "Marc Aromas"}</span>
               </div>
-              <p className="text-sm text-gray-400 mb-4">Velas artesanais feitas à mão para transformar sua rotina em ritual.</p>
+              <p className="text-sm text-gray-400 mb-4">{settings?.general?.description || "Velas artesanais feitas à mão para transformar sua rotina em ritual."}</p>
             </div>
             <div>
               <h4 className="font-bold mb-4">Links Rápidos</h4>
@@ -235,7 +237,7 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
-            <p>© 2025 Marc Aromas. Todos os direitos reservados.</p>
+            <p>{settings?.cms_footer?.copyrightText || "© 2025 Marc Aromas. Todos os direitos reservados."}</p>
             <p className="mt-2 text-xs">Feito com 💜 em São Paulo</p>
           </div>
         </div>

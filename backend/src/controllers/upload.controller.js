@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
-import { supabase, STORAGE_BUCKET } from "../lib/supabase.js";
+import { supabase, STORAGE_BUCKET, listFiles } from "../lib/supabase.js";
 
 const UPLOADS_DIR = path.resolve("./uploads");
 
@@ -166,8 +166,8 @@ export async function processAndSaveImage(file, options = {}) {
     .webp({ quality: 80 })
     .toBuffer();
 
-  // Determine subdirectory based on image type
-  const subDir = imageType === 'content' ? 'content/' : '';
+  // Determine subdirectory based on image type or custom folder
+  const subDir = options.folder ? (options.folder.endsWith('/') ? options.folder : `${options.folder}/`) : (imageType === 'content' ? 'content/' : '');
 
   // Upload to Supabase Storage (or local as fallback)
   let webpUrl, jpgUrl, mediumUrl, thumbnailUrl;
@@ -241,8 +241,9 @@ export default {
 
       // Get image type from query or body (product, banner, avatar)
       const imageType = req.query.type || req.body.imageType || 'default';
+      const folder = req.query.folder || req.body.folder;
 
-      const meta = await processAndSaveImage(req.file, { imageType });
+      const meta = await processAndSaveImage(req.file, { imageType, folder });
 
       // Return URL for backward compatibility
       res.json({
@@ -297,6 +298,56 @@ export default {
       }
 
       res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  listFiles: async (req, res, next) => {
+    try {
+      const { path: folderPath = '' } = req.query;
+
+      if (supabase) {
+        const files = await listFiles(STORAGE_BUCKET, folderPath);
+
+        // Transform to standard format
+        const formattedFiles = files.map(file => {
+          const isFolder = !file.metadata; // Supabase returns folders without metadata
+          const publicUrl = !isFolder ? supabase.storage.from(STORAGE_BUCKET).getPublicUrl(`${folderPath ? `${folderPath}/` : ''}${file.name}`).data.publicUrl : null;
+
+          return {
+            name: file.name,
+            isFolder,
+            size: file.metadata ? file.metadata.size : 0,
+            mimeType: file.metadata ? file.metadata.mimetype : null,
+            lastModified: file.metadata ? file.metadata.lastModified : null,
+            url: publicUrl
+          };
+        });
+
+        res.json({ files: formattedFiles });
+      } else {
+        // Local fallback
+        const targetDir = path.join(UPLOADS_DIR, folderPath);
+        if (!fs.existsSync(targetDir)) {
+          return res.json({ files: [] });
+        }
+
+        const entries = await fs.promises.readdir(targetDir, { withFileTypes: true });
+        const files = entries.map(entry => {
+          const isFolder = entry.isDirectory();
+          return {
+            name: entry.name,
+            isFolder,
+            size: 0, // Need stat for size, skipping for perf in fallback
+            mimeType: null,
+            lastModified: null,
+            url: !isFolder ? `/uploads/${folderPath ? `${folderPath}/` : ''}${entry.name}` : null
+          };
+        });
+
+        res.json({ files });
+      }
     } catch (err) {
       next(err);
     }

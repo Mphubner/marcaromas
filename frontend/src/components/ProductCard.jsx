@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Eye, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LazyImage } from '@/components/ui/LazyImage';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
@@ -59,18 +60,22 @@ export default function ProductCard({ product }) {
       {/* Image Section with Hover Effect */}
       <div className="relative h-80 overflow-hidden rounded-t-2xl bg-gray-100">
         {/* First Image */}
-        <img
+        <LazyImage
           src={images[0]}
           alt={product.name}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className="absolute inset-0 w-full h-full"
+          imageClassName="group-hover:scale-110 transition-transform duration-700"
+          aspectRatio="aspect-none"
         />
 
         {/* Second Image on Hover (if available) */}
         {images[1] && (
-          <img
+          <LazyImage
             src={images[1]}
             alt={`${product.name} - visualização 2`}
-            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            className="absolute inset-0 w-full h-full"
+            imageClassName="opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            aspectRatio="aspect-none"
           />
         )}
 

@@ -38,6 +38,7 @@ model User {
   addresses     Address[]
   userAchievements UserAchievement[]
   wishlists     Wishlist[]
+  notificationPreferences NotificationPreference?
 }
 
 model Address {
@@ -94,6 +95,12 @@ model Product {
   orderItems        OrderItem[]
   variants          ProductVariant[]
   wishlists         Wishlist[]
+
+  @@index([category])
+  @@index([is_featured])
+  @@index([is_available])
+  @@index([price])
+  @@index([name])
 }
 
 model ProductVariant {
@@ -162,6 +169,11 @@ model Order {
   history               OrderHistory[]
   items                 OrderItem[]
   referralConversions   ReferralConversion[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([orderNumber])
 }
 
 model OrderHistory {
@@ -532,10 +544,50 @@ model Notification {
   userEmail String
   title     String
   message   String
-  type      String
+  type      String   // ORDER, SUBSCRIPTION, REFERRAL, ACHIEVEMENT, PROMOTION, CONTENT, SYSTEM
+  category  String?  // Same as type, for filtering
+  channel   String   @default("IN_APP") // IN_APP, EMAIL, PUSH
   link      String?
+  data      Json?    // Dynamic data for templates
   is_read   Boolean  @default(false)
   createdAt DateTime @default(now())
+  
+  @@index([userEmail])
+  @@index([is_read])
+  @@index([type])
+}
+
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    Int      @unique
+  email     Boolean  @default(true)
+  push      Boolean  @default(true)
+  in_app    Boolean  @default(true)
+  
+  // Categories
+  orders        Boolean @default(true)
+  subscriptions Boolean @default(true)
+  referrals     Boolean @default(true)
+  achievements  Boolean @default(true)
+  promotions    Boolean @default(true)
+  content       Boolean @default(true)
+  
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationTemplate {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique // e.g., "order-confirmed"
+  subject     String
+  content     String   // HTML or Markdown
+  type        String   // EMAIL, IN_APP
+  variables   String[] // List of available variables e.g. ["userName", "orderId"]
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model ScentProfile {
@@ -747,6 +799,34 @@ model Content {
   // Reading Stats
   read_time_minutes Int?
   views             Int            @default(0)
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   // INFO, WARN, ERROR
+  module    String   // AUTH, ORDER, PAYMENT, SYSTEM, etc.
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([module])
+  @@index([createdAt])
+}
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  provider  String   // STRIPE, MERCADOPAGO, ETC
+  event     String
+  payload   Json?
+  status    String   // SUCCESS, FAILED
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+}
   
   // Relations
   blocks            ContentBlock[]

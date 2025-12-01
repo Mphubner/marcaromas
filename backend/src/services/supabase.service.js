@@ -105,9 +105,34 @@ export const getSignedUrl = async (bucket, path, expiresIn = 3600) => {
     return data.signedUrl;
 };
 
+/**
+ * List files in Supabase Storage
+ */
+export const listFiles = async (bucket, path = '', options = {}) => {
+    if (!supabase) {
+        throw new Error('Supabase not configured');
+    }
+
+    const { data, error } = await supabase.storage
+        .from(bucket)
+        .list(path, {
+            limit: options.limit || 100,
+            offset: options.offset || 0,
+            sortBy: options.sortBy || { column: 'name', order: 'asc' },
+        });
+
+    if (error) {
+        console.error('[Supabase Storage] List error:', error);
+        throw error;
+    }
+
+    return data;
+};
+
 export default {
     getSupabaseClient,
     uploadFile,
     deleteFile,
-    getSignedUrl
+    getSignedUrl,
+    listFiles
 };

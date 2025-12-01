@@ -18,6 +18,9 @@ const upload = multer({
   },
 });
 
+// List files
+router.get("/", authMiddleware, adminMiddleware, uploadController.listFiles);
+
 // Admin-only upload endpoint
 router.post("/", authMiddleware, adminMiddleware, upload.single("file"), uploadController.uploadSingle);
 

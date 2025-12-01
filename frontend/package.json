@@ -54,7 +54,8 @@
     "sonner": "^2.0.7",
     "swiper": "^12.0.3",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

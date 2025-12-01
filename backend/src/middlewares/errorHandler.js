@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import loggerService, { LOG_LEVELS, MODULES } from '../services/logger.service.js';
 
 const errorHandler = (err, req, res, next) => {
   // Log error with context
@@ -9,6 +10,20 @@ const errorHandler = (err, req, res, next) => {
     body: req.body,
     userId: req.user?.id,
   });
+
+  // Log to Database
+  loggerService.logSystem(
+    LOG_LEVELS.ERROR,
+    MODULES.SYSTEM,
+    err.message,
+    {
+      stack: err.stack,
+      method: req.method,
+      url: req.originalUrl,
+      body: req.body,
+      userId: req.user?.id,
+    }
+  );
 
   // Determine status code
   const statusCode = err.statusCode || err.status || 500;

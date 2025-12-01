@@ -62,6 +62,9 @@ import ContentPage from "./ContentPage";
 import ContentListPage from "./content/ContentListPage";
 import ContentCreatePage from "./content/ContentCreatePage";
 import ContentEditPage from "./content/ContentEditPage";
+import MediaPage from "./MediaPage";
+import SystemLogs from "./logs/SystemLogs";
+import WebhookLogs from "./logs/WebhookLogs";
 
 const navItems = [
   { path: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -77,6 +80,9 @@ const navItems = [
   { path: "/admin/referrals", label: "Indicações", icon: Share2 },
   { path: "/admin/reviews", label: "Reviews", icon: Star },
   { path: "/admin/content", label: "Content", icon: FileText },
+  { path: "/admin/media", label: "Galeria", icon: ImageIcon },
+  { path: "/admin/logs/system", label: "Logs Sistema", icon: Activity },
+  { path: "/admin/logs/webhooks", label: "Logs Webhooks", icon: Share2 },
   { path: "/admin/configurations", label: "Configurações", icon: Settings },
 ];
 
@@ -211,6 +217,11 @@ const Admin = () => {
             <Route path="content" element={<ContentListPage />} />
             <Route path="content/new" element={<ContentCreatePage />} />
             <Route path="content/:id/edit" element={<ContentEditPage />} />
+
+            <Route path="media" element={<MediaPage />} />
+
+            <Route path="logs/system" element={<SystemLogs />} />
+            <Route path="logs/webhooks" element={<WebhookLogs />} />
           </Routes>
         </div>
       </main>

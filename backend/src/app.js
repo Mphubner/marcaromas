@@ -1,15 +1,5 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-import passport from "./config/googleAuth.js";
-
-import authRoutes from "./routes/auth.routes.js";
-import productRoutes from "./routes/product.routes.js";
-import cartRoutes from "./routes/cart.routes.js";
-import orderRoutes from "./routes/order.routes.js";
-import subscriptionRoutes from "./routes/subscription.routes.js";
-import paymentRoutes from "./routes/payment.routes.js";
-import contactRoutes from "./routes/contact.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import achievementRoutes from "./routes/achievement.routes.js";
 import wishlistRoutes from "./routes/wishlist.routes.js";
@@ -17,19 +7,6 @@ import userRoutes from "./routes/user.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import couponRoutes from "./routes/coupon.routes.js";
-import referralsRoutes from "./routes/referrals.routes.js";
-import adminReferralsRoutes from "./routes/adminReferrals.routes.js";
-import analyticsRoutes from "./routes/analytics.routes.js";
-import configRoutes from "./routes/config.routes.js";
-import contentRoutes from "./routes/content.routes.js";
-import notificationRoutes from "./routes/notification.routes.js";
-import pageRoutes from "./routes/page.routes.js";
-import planRoutes from "./routes/plan.routes.js";
-import preferencesRoutes from "./routes/preferences.routes.js";
-import giftRoutes from "./routes/gift.routes.js";
-import pageSettingsRoutes from "./routes/page-settings.routes.js";
-import boxRoutes from "./routes/box.routes.js";
-import uploadRoutes from "./routes/upload.routes.js";
 import melhorEnvioRoutes from "./routes/melhorenvio.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
@@ -77,13 +54,24 @@ app.use(cors({
 
 app.use(express.json());
 
+// Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Compression
+app.use(compression());
+
+// Apply global rate limiter
+app.use(globalLimiter);
+
 // Initialize Passport
 app.use(passport.initialize());
 
 // ----------------------
 // 🛣️ ROTAS PRINCIPAIS
 // ----------------------
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
@@ -104,33 +92,6 @@ import { getCurrentBox } from "./controllers/box.controller.js";
 app.use("/api/boxes", boxRoutes);
 app.get("/api/current-box", getCurrentBox);
 app.use("/api/reviews", reviewRoutes);
-app.use("/api/coupons", couponRoutes);
-app.use("/api/referrals", referralsRoutes);
-app.use("/api/admin/referrals", adminReferralsRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/addresses", addressRoutes);
-app.use("/api/config", configRoutes);
-app.use("/api/content", contentRoutes);
-import contentVersionRoutes from './routes/contentVersion.routes.js';
-app.use("/api/content", contentVersionRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/achievements", achievementRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-
-// Serve uploaded files (local storage)
-import path from "path";
-app.use('/uploads', express.static(path.resolve('./uploads')));
-
-// Uploads
-app.use('/api/uploads', uploadRoutes);
-app.use('/api/melhor-envio', melhorEnvioRoutes);
-
-// Health checks
-app.use('/api/health', healthRoutes);
-
-// Webhooks (no auth required)
-app.use('/api/webhooks', webhookRoutes);
 
 // Store - unified products + boxes for public
 app.use('/api', storeRoutes);

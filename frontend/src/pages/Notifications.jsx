@@ -1,349 +1,261 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
     Bell,
-    BellOff,
     Check,
-    CheckCheck,
     Trash2,
-    Package,
-    CreditCard,
+    Settings,
+    ShoppingBag,
+    Star,
+    Users,
     Gift,
-    AlertCircle,
+    FileText,
     Info,
-    Star
+    Filter
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-// Premium Client Components
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-    ClientPageHeader,
-    ClientCard,
-    ClientButton,
-    ClientBadge,
-    ClientEmptyState,
-    ClientTabs
-} from '@/components/client';
-
-// Mock service (replace with real API)
-const notificationService = {
-    getNotifications: async () => {
-        // Mock data
-        return [
-            {
-                id: 1,
-                type: 'order',
-                title: 'Pedido #1234 entregue',
-                message: 'Seu pedido foi entregue com sucesso!',
-                read: false,
-                createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-                icon: Package,
-                color: 'green'
-            },
-            {
-                id: 2,
-                type: 'payment',
-                title: 'Pagamento aprovado',
-                message: 'O pagamento do pedido #1233 foi aprovado.',
-                read: false,
-                createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-                icon: CreditCard,
-                color: 'blue'
-            },
-            {
-                id: 3,
-                type: 'promotion',
-                title: '20% OFF em velas florais',
-                message: 'Aproveite nosso desconto especial por tempo limitado!',
-                read: true,
-                createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-                icon: Gift,
-                color: 'purple'
-            },
-            {
-                id: 4,
-                type: 'system',
-                title: 'Nova conquista desbloqueada!',
-                message: 'Você conquistou "Primeira Compra" e ganhou 50 pontos.',
-                read: true,
-                createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-                icon: Star,
-                color: 'yellow'
-            },
-            {
-                id: 5,
-                type: 'alert',
-                title: 'Assinatura próxima da renovação',
-                message: 'Sua assinatura será renovada em 3 dias.',
-                read: false,
-                createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-                icon: AlertCircle,
-                color: 'orange'
-            }
-        ];
-    },
-
-    markAsRead: async (id) => {
-        // Mock
-        return { success: true };
-    },
-
-    markAllAsRead: async () => {
-        // Mock
-        return { success: true };
-    },
-
-    deleteNotification: async (id) => {
-        // Mock
-        return { success: true };
-    }
-};
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import api from '@/lib/api';
+import { toast } from 'sonner';
 
 export default function Notifications() {
     const queryClient = useQueryClient();
-    const [filter, setFilter] = useState('all');
+    const [activeTab, setActiveTab] = useState('all');
+    const [page, setPage] = useState(1);
 
-    // Fetch notifications
-    const { data: notifications = [], isLoading } = useQuery({
-        queryKey: ['notifications'],
-        queryFn: notificationService.getNotifications
+    // Fetch Notifications
+    const { data, isLoading } = useQuery({
+        queryKey: ['notifications', page, activeTab],
+        queryFn: async () => {
+            const type = activeTab === 'all' ? undefined : activeTab.toUpperCase();
+            const response = await api.get('/notifications', {
+                params: { page, limit: 20, type }
+            });
+            return response.data;
+        }
     });
 
-    // Mark as read mutation
+    // Fetch Preferences
+    const { data: preferences } = useQuery({
+        queryKey: ['notification-preferences'],
+        queryFn: async () => {
+            const response = await api.get('/notifications/preferences');
+            return response.data;
+        }
+    });
+
+    // Mutations
     const markAsReadMutation = useMutation({
-        mutationFn: (id) => notificationService.markAsRead(id),
+        mutationFn: async (id) => {
+            await api.patch(`/notifications/${id}/read`);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries(['notifications']);
-            toast.success('Notificação marcada como lida');
+            queryClient.invalidateQueries(['unread-count']); // Assuming global unread count
         }
     });
 
-    // Mark all as read mutation
-    const markAllAsReadMutation = useMutation({
-        mutationFn: () => notificationService.markAllAsRead(),
-        onSuccess: () => {
-            queryClient.invalidateQueries(['notifications']);
-            toast.success('Todas as notificações marcadas como lida');
-        }
-    });
-
-    // Delete notification mutation
     const deleteMutation = useMutation({
-        mutationFn: (id) => notificationService.deleteNotification(id),
+        mutationFn: async (id) => {
+            await api.delete(`/notifications/${id}`);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries(['notifications']);
             toast.success('Notificação excluída');
         }
     });
 
-    // Filter notifications
-    const filteredNotifications = filter === 'all'
-        ? notifications
-        : filter === 'unread'
-            ? notifications.filter(n => !n.read)
-            : notifications.filter(n => n.type === filter);
+    const updatePreferencesMutation = useMutation({
+        mutationFn: async (newPreferences) => {
+            await api.put('/notifications/preferences', newPreferences);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries(['notification-preferences']);
+            toast.success('Preferências atualizadas');
+        }
+    });
 
-    const unreadCount = notifications.filter(n => !n.read).length;
-
-    const filterTabs = [
-        { id: 'all', label: 'Todas', count: notifications.length },
-        { id: 'unread', label: 'Não Lidas', count: unreadCount },
-        { id: 'order', label: 'Pedidos' },
-        { id: 'payment', label: 'Pagamentos' },
-        { id: 'promotion', label: 'Promoções' }
-    ];
-
-    const getIconComponent = (notification) => {
-        const IconComponent = notification.icon || Bell;
-        return IconComponent;
+    const handleMarkAllRead = () => {
+        markAsReadMutation.mutate('all');
     };
 
-    const getColorClass = (color) => {
-        const colors = {
-            green: 'from-green-400 to-emerald-600',
-            blue: 'from-blue-400 to-cyan-600',
-            purple: 'from-purple-400 to-pink-600',
-            yellow: 'from-yellow-400 to-orange-500',
-            orange: 'from-orange-400 to-red-500',
-            brown: 'from-[#8B7355] to-[#7A6548]'
-        };
-        return colors[color] || colors.brown;
+    const getIcon = (type) => {
+        switch (type) {
+            case 'ORDER': return <ShoppingBag className="w-5 h-5 text-blue-500" />;
+            case 'ACHIEVEMENT': return <Star className="w-5 h-5 text-yellow-500" />;
+            case 'REFERRAL': return <Users className="w-5 h-5 text-green-500" />;
+            case 'PROMOTION': return <Gift className="w-5 h-5 text-purple-500" />;
+            case 'CONTENT': return <FileText className="w-5 h-5 text-indigo-500" />;
+            default: return <Info className="w-5 h-5 text-gray-500" />;
+        }
     };
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B7355]" />
-            </div>
-        );
-    }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6] py-12">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                <ClientPageHeader
-                    title="Notificações"
-                    subtitle={`${unreadCount} ${unreadCount === 1 ? 'notificação não lida' : 'notificações não lidas'}`}
-                    backTo="/dashboard"
-                    action={
-                        unreadCount > 0 && (
-                            <ClientButton
-                                variant="outline"
-                                onClick={() => markAllAsReadMutation.mutate()}
-                                disabled={markAllAsReadMutation.isPending}
-                            >
-                                <CheckCheck className="w-4 h-4 mr-2" />
-                                Marcar Todas Como Lidas
-                            </ClientButton>
-                        )
-                    }
-                />
-
-                {/* Filter Tabs */}
-                <div className="mb-6">
-                    <div className="flex gap-2 flex-wrap">
-                        {filterTabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setFilter(tab.id)}
-                                className={`px-4 py-2 rounded-2xl font-semibold transition-all ${filter === tab.id
-                                        ? 'bg-[#8B7355] text-white shadow-lg'
-                                        : 'bg-white text-gray-700 hover:bg-gray-100'
-                                    }`}
-                            >
-                                {tab.label}
-                                {tab.count !== undefined && (
-                                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${filter === tab.id
-                                            ? 'bg-white/20'
-                                            : 'bg-gray-200'
-                                        }`}>
-                                        {tab.count}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                        <Bell className="w-6 h-6" />
+                        Notificações
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Acompanhe suas atualizações e novidades
+                    </p>
                 </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleMarkAllRead}>
+                        <Check className="w-4 h-4 mr-2" />
+                        Marcar todas como lidas
+                    </Button>
 
-                {/* Notifications List */}
-                {filteredNotifications.length === 0 ? (
-                    <ClientEmptyState
-                        icon={filter === 'unread' ? BellOff : Bell}
-                        title={
-                            filter === 'unread'
-                                ? 'Nenhuma notificação não lida'
-                                : 'Nenhuma notificação'
-                        }
-                        message={
-                            filter === 'all'
-                                ? 'Você não tem notificações ainda'
-                                : 'Nenhuma notificação nesta categoria'
-                        }
-                    />
-                ) : (
-                    <div className="space-y-4">
-                        {filteredNotifications.map((notification, index) => {
-                            const IconComponent = getIconComponent(notification);
-
-                            return (
-                                <motion.div
-                                    key={notification.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                >
-                                    <ClientCard
-                                        hoverable
-                                        className={`relative ${!notification.read ? 'ring-2 ring-[#8B7355]/20' : ''}`}
-                                    >
-                                        <div className="flex gap-4">
-                                            {/* Icon */}
-                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getColorClass(notification.color)} flex items-center justify-center flex-shrink-0`}>
-                                                <IconComponent className="w-6 h-6 text-white" />
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Settings className="w-5 h-5" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Preferências de Notificação</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6 py-4">
+                                {preferences && (
+                                    <>
+                                        <div className="space-y-4">
+                                            <h3 className="font-medium">Canais</h3>
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="email">Email</Label>
+                                                <Switch
+                                                    id="email"
+                                                    checked={preferences.email}
+                                                    onCheckedChange={(checked) => updatePreferencesMutation.mutate({ email: checked })}
+                                                />
                                             </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between gap-4 mb-2">
-                                                    <div>
-                                                        <h3 className="font-bold text-[#2C2419] mb-1">
-                                                            {notification.title}
-                                                        </h3>
-                                                        <p className="text-sm text-gray-600">
-                                                            {notification.message}
-                                                        </p>
-                                                    </div>
-
-                                                    {!notification.read && (
-                                                        <div className="w-3 h-3 rounded-full bg-[#8B7355] flex-shrink-0 mt-1" />
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs text-gray-500">
-                                                        {formatDistanceToNow(notification.createdAt, {
-                                                            addSuffix: true,
-                                                            locale: ptBR
-                                                        })}
-                                                    </span>
-
-                                                    <div className="flex gap-2">
-                                                        {!notification.read && (
-                                                            <ClientButton
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => markAsReadMutation.mutate(notification.id)}
-                                                                disabled={markAsReadMutation.isPending}
-                                                            >
-                                                                <Check className="w-4 h-4" />
-                                                            </ClientButton>
-                                                        )}
-
-                                                        <ClientButton
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => deleteMutation.mutate(notification.id)}
-                                                            disabled={deleteMutation.isPending}
-                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </ClientButton>
-                                                    </div>
-                                                </div>
+                                            <div className="flex items-center justify-between">
+                                                <Label htmlFor="in_app">Na Plataforma</Label>
+                                                <Switch
+                                                    id="in_app"
+                                                    checked={preferences.in_app}
+                                                    onCheckedChange={(checked) => updatePreferencesMutation.mutate({ in_app: checked })}
+                                                />
                                             </div>
                                         </div>
-                                    </ClientCard>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                )}
+                                        <div className="space-y-4">
+                                            <h3 className="font-medium">Categorias</h3>
+                                            {[
+                                                { key: 'orders', label: 'Pedidos' },
+                                                { key: 'subscriptions', label: 'Assinaturas' },
+                                                { key: 'referrals', label: 'Indicações' },
+                                                { key: 'achievements', label: 'Conquistas' },
+                                                { key: 'promotions', label: 'Promoções' },
+                                                { key: 'content', label: 'Conteúdo Novo' },
+                                            ].map((cat) => (
+                                                <div key={cat.key} className="flex items-center justify-between">
+                                                    <Label htmlFor={cat.key}>{cat.label}</Label>
+                                                    <Switch
+                                                        id={cat.key}
+                                                        checked={preferences[cat.key]}
+                                                        onCheckedChange={(checked) => updatePreferencesMutation.mutate({ [cat.key]: checked })}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
 
-                {/* Info Card */}
-                {notifications.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-8"
-                    >
-                        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-200">
-                            <div className="flex items-start gap-3">
-                                <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm text-blue-900">
-                                    <p className="font-semibold mb-1">Sobre as Notificações</p>
-                                    <p>
-                                        Mantenha-se atualizado sobre pedidos, pagamentos, promoções e novidades.
-                                        As notificações são automaticamente removidas após 30 dias.
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="mb-6 flex flex-wrap h-auto">
+                    <TabsTrigger value="all">Todas</TabsTrigger>
+                    <TabsTrigger value="order">Pedidos</TabsTrigger>
+                    <TabsTrigger value="subscription">Assinaturas</TabsTrigger>
+                    <TabsTrigger value="referral">Indicações</TabsTrigger>
+                    <TabsTrigger value="achievement">Conquistas</TabsTrigger>
+                    <TabsTrigger value="promotion">Promoções</TabsTrigger>
+                </TabsList>
+
+                <div className="space-y-4">
+                    {isLoading ? (
+                        <div className="text-center py-8">Carregando...</div>
+                    ) : data?.notifications.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground bg-gray-50 rounded-lg">
+                            <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                            <p>Nenhuma notificação encontrada</p>
+                        </div>
+                    ) : (
+                        data?.notifications.map((notification) => (
+                            <div
+                                key={notification.id}
+                                className={`flex gap-4 p-4 rounded-lg border transition-colors ${notification.is_read ? 'bg-white' : 'bg-blue-50 border-blue-100'
+                                    }`}
+                            >
+                                <div className="mt-1">
+                                    {getIcon(notification.type)}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className={`font-medium ${!notification.is_read && 'text-blue-900'}`}>
+                                            {notification.title}
+                                        </h3>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                                            {format(new Date(notification.createdAt), "d 'de' MMM, HH:mm", { locale: ptBR })}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {notification.message}
                                     </p>
+                                    {notification.link && (
+                                        <a
+                                            href={notification.link}
+                                            className="text-xs text-[#8B7355] hover:underline mt-2 inline-block"
+                                        >
+                                            Ver detalhes
+                                        </a>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    {!notification.is_read && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-100"
+                                            onClick={() => markAsReadMutation.mutate(notification.id)}
+                                            title="Marcar como lida"
+                                        >
+                                            <Check className="w-4 h-4" />
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                        onClick={() => deleteMutation.mutate(notification.id)}
+                                        title="Excluir"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </Button>
                                 </div>
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-            </div>
+                        ))
+                    )}
+                </div>
+            </Tabs>
         </div>
     );
 }
