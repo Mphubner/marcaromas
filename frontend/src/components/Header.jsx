@@ -53,6 +53,7 @@ export default function Header() {
     { name: "Marc Store", to: "/loja" },
     { name: "Essenza Blog", to: "/aromaterapia" },
     { name: "Presentear", to: "/presentear" },
+    { name: "Wishlist", to: "/wishlist" },
   ];
 
   return (

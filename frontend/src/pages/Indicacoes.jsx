@@ -60,9 +60,10 @@ export default function Indicacoes() {
   });
 
   // Fetch dashboard data
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ['referral-dashboard'],
-    queryFn: referralService.getMyDashboard
+    queryFn: referralService.getMyDashboard,
+    retry: 1
   });
 
   // Fetch conversions
@@ -140,6 +141,21 @@ export default function Indicacoes() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B7355]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6]">
+        <div className="text-center p-8 max-w-md mx-auto">
+          <div className="bg-red-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Ops! Algo deu errado</h2>
+          <p className="text-gray-600 mb-6">{error.response?.data?.error || 'Não foi possível carregar suas informações de indicação. Tente novamente mais tarde.'}</p>
+          <ClientButton onClick={() => window.location.reload()}>Tentar Novamente</ClientButton>
+        </div>
       </div>
     );
   }

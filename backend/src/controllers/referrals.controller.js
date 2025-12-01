@@ -35,8 +35,16 @@ export const getMyDashboard = async (req, res) => {
             });
 
             if (!activeProgram) {
-                return res.status(400).json({
-                    error: 'No active referral program found'
+                // Auto-create default program if none exists
+                activeProgram = await prisma.referralProgram.create({
+                    data: {
+                        name: 'Programa Padrão',
+                        type: 'FIXED',
+                        trigger_event: 'PURCHASE',
+                        fixed_amount: 10.00,
+                        min_purchase_amount: 50.00,
+                        is_active: true
+                    }
                 });
             }
 
