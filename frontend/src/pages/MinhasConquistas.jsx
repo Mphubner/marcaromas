@@ -6,9 +6,12 @@ import {
     Star,
     Target,
     Award,
-    Filter
+    Filter,
+    Gift,
+    TrendingUp
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 // Premium Client Components
 import {
@@ -16,7 +19,6 @@ import {
     ClientCard,
     ClientButton,
     ClientEmptyState,
-    ClientTabs,
     AchievementCard,
     LeaderboardCard,
     RewardsGrid
@@ -36,9 +38,9 @@ const CATEGORIES = [
 ];
 
 const TABS = [
-    { id: 'achievements', label: 'Conquistas' },
-    { id: 'rewards', label: 'Recompensas' },
-    { id: 'leaderboard', label: 'Ranking' },
+    { id: 'achievements', label: 'Conquistas', icon: Trophy },
+    { id: 'rewards', label: 'Recompensas', icon: Gift },
+    { id: 'leaderboard', label: 'Ranking', icon: TrendingUp },
 ];
 
 export default function MinhasConquistas() {
@@ -157,11 +159,30 @@ export default function MinhasConquistas() {
 
                 {/* Tabs */}
                 <div className="mb-8">
-                    <ClientTabs
-                        tabs={TABS}
-                        activeTab={activeTab}
-                        onChange={setActiveTab}
-                    />
+                    <div className="border-b border-gray-200">
+                        <nav className="flex gap-8 overflow-x-auto scrollbar-hide" aria-label="Tabs">
+                            {TABS.map((tab) => {
+                                const Icon = tab.icon;
+                                const isActive = activeTab === tab.id;
+
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "flex items-center gap-2 px-1 py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap",
+                                            isActive
+                                                ? "border-[#8B7355] text-[#8B7355]"
+                                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                        )}
+                                    >
+                                        <Icon className="w-5 h-5" />
+                                        {tab.label}
+                                    </button>
+                                );
+                            })}
+                        </nav>
+                    </div>
                 </div>
 
                 {/* Achievements Tab */}
