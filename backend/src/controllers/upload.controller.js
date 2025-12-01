@@ -185,7 +185,13 @@ export default {
       const imageType = req.query.type || req.body.imageType || 'default';
 
       const meta = await processAndSaveImage(req.file, { imageType });
-      res.json({ ok: true, meta });
+
+      // Return URL for backward compatibility
+      res.json({
+        ok: true,
+        url: meta.files.webp, // Use WebP as default
+        meta
+      });
     } catch (err) {
       if (err.message.includes('Invalid file type') || err.message.includes('File too large')) {
         return res.status(400).json({ error: err.message });
