@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
 import { ClientButton } from './ClientButton';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 /**
  * Premium Avatar Upload Component
