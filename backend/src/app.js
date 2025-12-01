@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import achievementRoutes from "./routes/achievement.routes.js";
 import wishlistRoutes from "./routes/wishlist.routes.js";
