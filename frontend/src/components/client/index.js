@@ -3,8 +3,11 @@
 export { ClientPageHeader } from './ClientPageHeader';
 export { ClientCard } from './ClientCard';
 export { ClientButton } from './ClientButton';
-export { ClientStats } from './ClientStats';
-export { ClientEmptyState } from './ClientEmptyState';
 export { ClientBadge, getStatusBadge } from './ClientBadge';
+export { ClientEmptyState } from './ClientEmptyState';
 export { ClientTabs } from './ClientTabs';
+export { ClientStats } from './ClientStats';
 export { ClientAvatarUpload } from './ClientAvatarUpload';
+export { AchievementCard } from './AchievementCard';
+export { LeaderboardCard } from './LeaderboardCard';
+export { RewardCard, RewardsGrid } from './RewardCard';

@@ -184,18 +184,18 @@ export default function CarrinhoPage() {
                         {/* Quantity and Price */}
                         <div className="flex items-center justify-between">
                           {/* Quantity Controls */}
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <ClientButton
                               variant="outline"
                               size="sm"
                               onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
                               disabled={item.quantity <= 1}
-                              className="h-10 w-10 p-0"
+                              className="h-9 w-9 p-0 flex-shrink-0"
                             >
                               <Minus className="w-4 h-4" />
                             </ClientButton>
 
-                            <span className="w-12 text-center font-bold text-lg">
+                            <span className="w-10 text-center font-bold text-base">
                               {item.quantity}
                             </span>
 
@@ -204,7 +204,7 @@ export default function CarrinhoPage() {
                               size="sm"
                               onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
                               disabled={item.quantity >= item.product.stock_quantity}
-                              className="h-10 w-10 p-0"
+                              className="h-9 w-9 p-0 flex-shrink-0"
                             >
                               <Plus className="w-4 h-4" />
                             </ClientButton>
@@ -239,18 +239,19 @@ export default function CarrinhoPage() {
                 <ClientCard title="Cupom de Desconto" icon={Ticket}>
                   {!appliedCoupon ? (
                     <div className="space-y-3">
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <Input
                           placeholder="Digite o cupom"
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                          className="rounded-2xl"
+                          className="rounded-2xl flex-1"
                           onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
                         />
                         <ClientButton
                           onClick={handleApplyCoupon}
                           disabled={couponLoading}
                           size="sm"
+                          className="px-6 whitespace-nowrap"
                         >
                           {couponLoading ? 'Validando...' : 'Aplicar'}
                         </ClientButton>
@@ -333,14 +334,14 @@ export default function CarrinhoPage() {
                     </div>
 
                     <Link to="/checkout-produto" className="block">
-                      <ClientButton variant="secondary" className="w-full h-14 text-lg">
+                      <ClientButton variant="secondary" className="w-full h-12 text-base font-semibold">
                         Finalizar Compra
                         <ArrowRight className="ml-2 w-5 h-5" />
                       </ClientButton>
                     </Link>
 
                     <Link to="/loja">
-                      <ClientButton variant="ghost" className="w-full text-white hover:text-white">
+                      <ClientButton variant="ghost" className="w-full h-12 text-white hover:text-white hover:bg-white/10">
                         Continuar Comprando
                       </ClientButton>
                     </Link>

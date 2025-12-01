@@ -19,7 +19,14 @@ export function ClientBadge({
         info: "bg-blue-100 text-blue-700 border-blue-200",
         pending: "bg-gray-100 text-gray-700 border-gray-200",
         active: "bg-gradient-to-r from-[#8B7355] to-[#7A6548] text-white border-none",
-        default: "bg-gray-100 text-gray-800 border-gray-200"
+        default: "bg-gray-100 text-gray-800 border-gray-200",
+        // Achievement tier badges
+        bronze: "bg-gradient-to-r from-amber-700 to-amber-900 text-white border-none shadow-md",
+        silver: "bg-gradient-to-r from-gray-300 to-gray-500 text-gray-900 border-none shadow-md",
+        gold: "bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 border-none shadow-md",
+        platinum: "bg-gradient-to-r from-purple-400 to-purple-600 text-white border-none shadow-md",
+        diamond: "bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-white border-none shadow-md",
+        locked: "bg-gray-200 text-gray-500 border-gray-300",
     };
 
     return (

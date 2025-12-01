@@ -36,6 +36,7 @@ model User {
   contents      Content[]
   contentVersions ContentVersion[]
   addresses     Address[]
+  userAchievements UserAchievement[]
 }
 
 model Address {
@@ -342,13 +343,63 @@ model Shipment {
 
 model Achievement {
   id             String   @id @default(cuid())
-  userEmail      String
-  title          String
+  name           String
   description    String
-  icon           String
-  reward_credits Float?
+  icon           String   // Emoji or icon name
+  category       String   // COMPRAS, ASSINATURA, COMUNIDADE, INDICACOES, COLECAO
+  tier           String   // BRONZE, SILVER, GOLD, PLATINUM, DIAMOND
+  points         Int
+  requirementType String  // purchase_count, subscription_months, review_count, referral_count, product_collection
+  requirementTarget Int   // Target number to achieve (e.g., 5 purchases)
+  
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  userAchievements UserAchievement[]
+  
+  @@index([category])
+  @@index([tier])
 }
+
+model UserAchievement {
+  id             String   @id @default(cuid())
+  userId         Int
+  achievementId  String
+  progress       Int      @default(0) // Current progress
+  unlocked       Boolean  @default(false)
+  unlockedAt     DateTime?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  user           User       @relation(fields: [userId], references: [id])
+  achievement    Achievement @relation(fields: [achievementId], references: [id])
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([unlocked])
+  @@index([userId, unlocked])
+}
+
+model AchievementReward {
+  id             String   @id @default(cuid())
+  name           String
+  description    String
+  type           String   // DISCOUNT, CREDIT, FREE_SHIPPING, EXCLUSIVE_CONTENT
+  value          Float    // Discount percentage or credit amount
+  requiredPoints Int
+  isActive       Boolean  @default(true)
+  code           String?  // Generated code for discount coupons
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([isActive])
+  @@index([requiredPoints])
+}
+
 
 model ScentHistory {
   id           String   @id @default(cuid())
