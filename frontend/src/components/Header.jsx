@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
   User,
+  Heart,
 } from "lucide-react";
 import { useCart } from "../context/CartContext"; // mantém o uso de contexto existente
 import { cn } from "@/lib/utils";;
@@ -105,6 +106,15 @@ export default function Header() {
 
           <button
             type="button"
+            onClick={() => navigate("/wishlist")}
+            className="p-2 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            title="Lista de Desejos"
+          >
+            <Heart size={18} />
+          </button>
+
+          <button
+            type="button"
             onClick={() => navigate("/perfil")}
             className="p-2 rounded-full text-white/80 hover:bg-white/10 hover:text-white transition-colors"
             title="Perfil"
@@ -163,10 +173,14 @@ export default function Header() {
                 </NavLink>
               ))}
               <div className="h-px bg-white/10 my-2" />
-              <div className="flex items-center justify-between px-2">
+              <div className="flex flex-wrap items-center justify-between px-2 gap-2">
                 <button onClick={() => { toggleTheme(); setMenuOpen(false); }} className="flex items-center gap-2 text-white/80 hover:text-white py-2">
                   {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
                   <span>Tema</span>
+                </button>
+                <button onClick={() => { navigate("/wishlist"); setMenuOpen(false); }} className="flex items-center gap-2 text-white/80 hover:text-white py-2">
+                  <Heart size={18} />
+                  <span>Wishlist</span>
                 </button>
                 <button onClick={() => { navigate("/carrinho"); setMenuOpen(false); }} className="flex items-center gap-2 text-white/80 hover:text-white py-2 relative">
                   <ShoppingBag size={18} />
