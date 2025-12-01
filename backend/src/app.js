@@ -11,6 +11,7 @@ import melhorEnvioRoutes from "./routes/melhorenvio.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
 import storeRoutes from "./routes/store.js";
+import { getCurrentBox } from "./controllers/box.controller.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
 
@@ -87,8 +88,6 @@ app.use("/api/plans", planRoutes);
 app.use("/api/preferences", preferencesRoutes);
 app.use("/api/gifts", giftRoutes);
 app.use("/api/page-settings", pageSettingsRoutes);
-import { getCurrentBox } from "./controllers/box.controller.js";
-
 app.use("/api/boxes", boxRoutes);
 app.get("/api/current-box", getCurrentBox);
 app.use("/api/reviews", reviewRoutes);
