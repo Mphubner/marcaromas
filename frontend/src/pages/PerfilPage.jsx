@@ -61,18 +61,22 @@ export default function PerfilPage() {
   const { data: profile, isLoading } = useQuery({
     queryKey: ['my-profile'],
     queryFn: userService.getMyProfile,
-    enabled: !!user,
-    onSuccess: (data) => {
+    enabled: !!user
+  });
+
+  // Update form data when profile loads (React Query v5 compatible)
+  useEffect(() => {
+    if (profile) {
       setFormData({
-        name: data.name || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        cpf: data.cpf || '',
-        birthDate: data.birthDate || '',
-        bio: data.bio || ''
+        name: profile.name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        cpf: profile.cpf || '',
+        birthDate: profile.birthDate || '',
+        bio: profile.bio || ''
       });
     }
-  });
+  }, [profile]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
