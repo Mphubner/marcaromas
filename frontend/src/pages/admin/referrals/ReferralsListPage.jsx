@@ -21,47 +21,7 @@ export default function ReferralsListPage() {
 
   const { data: stats } = useQuery({
     queryKey: ['admin-referral-stats'],
-    queryFn: () => adminService.getReferralStats(),
-  });
-
-  const markAsPaidMutation = useMutation({
-    mutationFn: (referralId) => adminService.markReferralAsPaid(referralId),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-referrals']);
-      toast.success('Recompensa marcada como paga!');
-    },
-  });
-
-  const copyCode = (code) => {
-    navigator.clipboard.writeText(code);
-    toast.success('Código copiado!');
-  };
-
-  const getStatusBadge = (status) => {
-    const config = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pendente' },
-      completed: { color: 'bg-blue-100 text-blue-800', label: 'Completado' },
-      rewarded: { color: 'bg-green-100 text-green-800', label: 'Recompensado' },
-                < div className = "text-sm text-gray-500" > Total Indicações</div>
-      <div className="text-2xl font-bold">{stats?.totalReferrals || 0}</div>
-              </div >
-            </div >
-          </CardContent >
         </Card >
-
-        <Card className="hover:shadow-md transition-shadow rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-500">Completadas</div>
-                <div className="text-2xl font-bold">{stats?.completedReferrals || 0}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="hover:shadow-md transition-shadow rounded-xl">
           <CardContent className="p-4">
