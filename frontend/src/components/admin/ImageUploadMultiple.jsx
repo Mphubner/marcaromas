@@ -44,7 +44,7 @@ export default function ImageUploadMultiple({
 
                 // Upload da imagem
                 const formData = new FormData();
-                formData.append('image', file);
+                formData.append('file', file);
 
                 try {
                     const { data } = await api.post('/uploads', formData, {
