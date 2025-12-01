@@ -37,6 +37,7 @@ model User {
   contentVersions ContentVersion[]
   addresses     Address[]
   userAchievements UserAchievement[]
+  wishlists     Wishlist[]
 }
 
 model Address {
@@ -92,6 +93,7 @@ model Product {
   cartItems         CartItem[]
   orderItems        OrderItem[]
   variants          ProductVariant[]
+  wishlists         Wishlist[]
 }
 
 model ProductVariant {
@@ -461,6 +463,37 @@ model Newsletter {
   status    String   @default("subscribed")
   source    String?
   createdAt DateTime @default(now())
+}
+
+model Wishlist {
+  id              String   @id @default(cuid())
+  userId          Int
+  productId       String
+  addedAt         DateTime @default(now())
+  notifyOnSale    Boolean  @default(true)
+  notifyOnStock   Boolean  @default(true)
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+model WishlistNotification {
+  id          String   @id @default(cuid())
+  userId      Int
+  productId   String
+  type        String   // SALE, BACK_IN_STOCK, PRICE_DROP
+  sent        Boolean  @default(false)
+  sentAt      DateTime?
+  metadata    Json?    // Store price info, discount %, etc
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([productId])
+  @@index([sent])
 }
 
 model Referral {

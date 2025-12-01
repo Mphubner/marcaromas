@@ -12,6 +12,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import contactRoutes from "./routes/contact.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import achievementRoutes from "./routes/achievement.routes.js";
+import wishlistRoutes from "./routes/wishlist.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
@@ -115,6 +116,7 @@ import contentVersionRoutes from './routes/contentVersion.routes.js';
 app.use("/api/content", contentVersionRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/achievements", achievementRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 // Serve uploaded files (local storage)
 import path from "path";

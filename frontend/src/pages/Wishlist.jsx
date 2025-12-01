@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Heart,
     ShoppingCart,
     Trash2,
     Star,
-    Package
+    Package,
+    Share2,
+    Bell,
+    BellOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -22,77 +25,22 @@ import {
 
 // Services
 import { cartService } from '../services/cartService';
+import { wishlistService } from '../services/wishlistService';
 import { useAuth } from '../context/AuthContext';
-
-// Mock wishlist service
-const wishlistService = {
-    getWishlist: async () => {
-        // Mock data
-        return [
-            {
-                id: 1,
-                product: {
-                    id: 101,
-                    name: 'Vela Lavanda Premium',
-                    price: 49.90,
-                    images: ['https://images.unsplash.com/photo-1602874801006-2bc2972f9c90?w=400'],
-                    inStock: true,
-                    rating: 4.8
-                },
-                addedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-            },
-            {
-                id: 2,
-                product: {
-                    id: 102,
-                    name: 'Vela Baunilha',
-                    price: 39.90,
-                    images: ['https://images.unsplash.com/photo-1603006905003-be475563bc59?w=400'],
-                    inStock: true,
-                    rating: 4.9
-                },
-                addedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-            },
-            {
-                id: 3,
-                product: {
-                    id: 103,
-                    name: 'Vela Oceano',
-                    price: 54.90,
-                    images: ['https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400'],
-                    inStock: false,
-                    rating: 4.7
-                },
-                addedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-            }
-        ];
-    },
-
-    removeFromWishlist: async (id) => {
-        return { success: true };
-    }
-};
+import { useWishlist } from '../context/WishlistContext';
 
 export default function Wishlist() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user } = useAuth();
-
-    // Fetch wishlist
-    const { data: wishlistItems = [], isLoading } = useQuery({
-        queryKey: ['wishlist'],
-        queryFn: wishlistService.getWishlist,
-        enabled: !!user
-    });
-
-    // Remove from wishlist mutation
-    const removeMutation = useMutation({
-        mutationFn: (id) => wishlistService.removeFromWishlist(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries(['wishlist']);
-            toast.success('Item removido da lista de desejos');
-        }
-    });
+    const {
+        wishlistItems,
+        removeFromWishlist,
+        toggleNotification,
+        isRemoving,
+    } = useWishlist();
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [shareUrl, setShareUrl] = useState('');
 
     // Add to cart mutation
     const addToCartMutation = useMutation({
@@ -103,7 +51,7 @@ export default function Wishlist() {
         },
         onError: () => {
             toast.error('Erro ao adicionar ao carrinho');
-        }
+        },
     });
 
     const handleAddToCart = (item) => {
@@ -114,27 +62,80 @@ export default function Wishlist() {
         addToCartMutation.mutate(item.product.id);
     };
 
+    const handleShare = async () => {
+        try {
+            const { shareUrl } = await wishlistService.getShareLink();
+            setShareUrl(shareUrl);
+            setShowShareModal(true);
+        } catch (error) {
+            toast.error('Erro ao gerar link de compartilhamento');
+        }
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copiado!');
+    };
+
+    const handleToggleNotification = (item, type) => {
+        const currentValue = type === 'sale' ? item.notifyOnSale : item.notifyOnStock;
+        toggleNotification({
+            wishlistId: item.id,
+            type,
+            enabled: !currentValue,
+        });
+    };
+
     if (!user) {
         navigate('/login?redirect=/wishlist');
         return null;
     }
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B7355]" />
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#FAFAF9] to-[#F9F8F6] py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <ClientPageHeader
-                    title="Lista de Desejos"
-                    subtitle={`${wishlistItems.length} ${wishlistItems.length === 1 ? 'item salvo' : 'itens salvos'}`}
-                    backTo="/dashboard"
-                />
+                <div className="flex items-center justify-between mb-8">
+                    <ClientPageHeader
+                        title="Lista de Desejos"
+                        subtitle={`${wishlistItems.length} ${wishlistItems.length === 1 ? 'item salvo' : 'itens salvos'}`}
+                        backTo="/dashboard"
+                    />
+                    {wishlistItems.length > 0 && (
+                        <ClientButton
+                            variant="outline"
+                            onClick={handleShare}
+                            className="flex items-center gap-2"
+                        >
+                            <Share2 className="w-4 h-4" />
+                            Compartilhar
+                        </ClientButton>
+                    )}
+                </div>
+
+                {/* Share Modal */}
+                {showShareModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowShareModal(false)}>
+                        <ClientCard className="max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="p-6">
+                                <h3 className="text-xl font-bold mb-4">Compartilhar Lista de Desejos</h3>
+                                <p className="text-gray-600 mb-4">
+                                    Compartilhe sua lista de desejos com amigos e familiares!
+                                </p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={shareUrl}
+                                        readOnly
+                                        className="flex-1 px-4 py-2 border rounded-xl bg-gray-50"
+                                    />
+                                    <ClientButton onClick={handleCopyLink}>
+                                        Copiar
+                                    </ClientButton>
+                                </div>
+                            </div>
+                        </ClientCard>
+                    </div>
+                )}
 
                 {wishlistItems.length === 0 ? (
                     <ClientEmptyState
@@ -220,6 +221,33 @@ export default function Wishlist() {
                                                         : 'Indisponível'}
                                             </ClientButton>
 
+                                            {/* Notification Toggles */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleToggleNotification(item, 'sale')}
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${item.notifyOnSale
+                                                            ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
+                                                            : 'bg-gray-100 text-gray-500 border-2 border-gray-200'
+                                                        }`}
+                                                    title="Notificar quando em promoção"
+                                                >
+                                                    {item.notifyOnSale ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                                    <span className="hidden sm:inline">Promoção</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleToggleNotification(item, 'stock')}
+                                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm transition-all ${item.notifyOnStock
+                                                            ? 'bg-green-100 text-green-700 border-2 border-green-300'
+                                                            : 'bg-gray-100 text-gray-500 border-2 border-gray-200'
+                                                        }`}
+                                                    title="Notificar quando disponível"
+                                                >
+                                                    {item.notifyOnStock ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                                                    <span className="hidden sm:inline">Estoque</span>
+                                                </button>
+                                            </div>
+
                                             <div className="flex gap-2">
                                                 <ClientButton
                                                     variant="outline"
@@ -231,8 +259,8 @@ export default function Wishlist() {
 
                                                 <ClientButton
                                                     variant="ghost"
-                                                    onClick={() => removeMutation.mutate(item.id)}
-                                                    disabled={removeMutation.isPending}
+                                                    onClick={() => removeFromWishlist(item.id)}
+                                                    disabled={isRemoving}
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
