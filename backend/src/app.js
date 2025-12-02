@@ -40,6 +40,7 @@ import configRoutes from "./routes/config.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import customerRoutes from "./routes/customer.routes.js";
 import contentVersionRoutes from "./routes/contentVersion.routes.js";
+import storeRoutes from "./routes/store.js";
 import { getCurrentBox } from "./controllers/box.controller.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
