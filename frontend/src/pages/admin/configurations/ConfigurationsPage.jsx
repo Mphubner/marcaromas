@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import ImageUploadField from '../../components/admin/content/ImageUploadField';
+import ImageUploadField from '../../../components/admin/content/ImageUploadField';
 import api from '../../../lib/api';
 
 const SECTIONS = {
