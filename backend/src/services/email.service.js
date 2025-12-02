@@ -4,97 +4,97 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 
 const initializeTransporter = () => {
-    if (transporter) return transporter;
+  if (transporter) return transporter;
 
-    const smtpConfig = {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false, // Use TLS
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    };
+  const smtpConfig = {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT) || 587,
+    secure: false, // Use TLS
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  };
 
-    // Check if SMTP is configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.warn('[Email Service] SMTP not fully configured. Email sending will be disabled.');
-        return null;
+  // Check if SMTP is configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('[Email Service] SMTP not fully configured. Email sending will be disabled.');
+    return null;
+  }
+
+  transporter = nodemailer.createTransport(smtpConfig);
+
+  // Verify connection
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('[Email Service] SMTP connection error:', error);
+    } else {
+      console.log('[Email Service] SMTP server is ready to send emails');
     }
+  });
 
-    transporter = nodemailer.createTransport(smtpConfig);
-
-    // Verify connection
-    transporter.verify((error, success) => {
-        if (error) {
-            console.error('[Email Service] SMTP connection error:', error);
-        } else {
-            console.log('[Email Service] SMTP server is ready to send emails');
-        }
-    });
-
-    return transporter;
+  return transporter;
 };
 
 /**
  * Send gift notification email to recipient
  */
 export const sendGiftNotificationEmail = async (giftData, planData) => {
-    const transport = initializeTransporter();
+  const transport = initializeTransporter();
 
-    if (!transport) {
-        console.warn('[Email Service] Skipping email send - SMTP not configured');
-        return { success: false, error: 'SMTP not configured' };
-    }
+  if (!transport) {
+    console.warn('[Email Service] Skipping email send - SMTP not configured');
+    return { success: false, error: 'SMTP not configured' };
+  }
 
-    try {
-        const {
-            recipientName,
-            recipientEmail,
-            giverName,
-            message,
-            duration,
-        } = giftData;
+  try {
+    const {
+      recipientName,
+      recipientEmail,
+      giverName,
+      message,
+      duration,
+    } = giftData;
 
-        // Generate HTML email with digital card
-        const htmlContent = generateGiftCardHTML({
-            recipientName,
-            giverName,
-            message,
-            planName: planData.name,
-            duration,
-        });
+    // Generate HTML email with digital card
+    const htmlContent = generateGiftCardHTML({
+      recipientName,
+      giverName,
+      message,
+      planName: planData.name,
+      duration,
+    });
 
-        const mailOptions = {
-            from: `"Marc Aromas" <${process.env.SMTP_USER}>`,
-            to: recipientEmail,
-            subject: `🎁 Você recebeu um presente especial de ${giverName}!`,
-            html: htmlContent,
-        };
+    const mailOptions = {
+      from: `"Marc Aromas" <${process.env.SMTP_USER}>`,
+      to: recipientEmail,
+      subject: `🎁 Você recebeu um presente especial de ${giverName}!`,
+      html: htmlContent,
+    };
 
-        const info = await transport.sendMail(mailOptions);
+    const info = await transport.sendMail(mailOptions);
 
-        console.log('[Email Service] Gift notification sent:', info.messageId);
+    console.log('[Email Service] Gift notification sent:', info.messageId);
 
-        return {
-            success: true,
-            messageId: info.messageId,
-        };
+    return {
+      success: true,
+      messageId: info.messageId,
+    };
 
-    } catch (error) {
-        console.error('[Email Service] Error sending gift notification:', error);
-        return {
-            success: false,
-            error: error.message,
-        };
-    }
+  } catch (error) {
+    console.error('[Email Service] Error sending gift notification:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
 };
 
 /**
  * Generate HTML for digital gift card
  */
 function generateGiftCardHTML({ recipientName, giverName, message, planName, duration }) {
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -385,24 +385,50 @@ function generateGiftCardHTML({ recipientName, giverName, message, planName, dur
  * Send test email (for debugging)
  */
 export const sendTestEmail = async (to) => {
-    const transport = initializeTransporter();
+  const transport = initializeTransporter();
 
-    if (!transport) {
-        throw new Error('SMTP not configured');
-    }
+  if (!transport) {
+    throw new Error('SMTP not configured');
+  }
 
-    const mailOptions = {
-        from: `"Marc Aromas" <${process.env.SMTP_USER}>`,
-        to,
-        subject: 'Test Email - Marc Aromas',
-        html: '<h1>Test Email</h1><p>If you received this, your SMTP is working!</p>',
-    };
+  const mailOptions = {
+    from: `"Marc Aromas" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'Test Email - Marc Aromas',
+    html: '<h1>Test Email</h1><p>If you received this, your SMTP is working!</p>',
+  };
 
-    const info = await transport.sendMail(mailOptions);
-    return info;
+  const info = await transport.sendMail(mailOptions);
+  return info;
+};
+
+/**
+ * Send generic email
+ */
+export const sendEmail = async ({ to, subject, html }) => {
+  const transport = initializeTransporter();
+  if (!transport) {
+    console.warn('[Email Service] Skipping email send - SMTP not configured');
+    return { success: false, error: 'SMTP not configured' };
+  }
+
+  try {
+    const info = await transport.sendMail({
+      from: `"Marc Aromas" <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log('[Email Service] Email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('[Email Service] Error sending email:', error);
+    throw error;
+  }
 };
 
 export default {
-    sendGiftNotificationEmail,
-    sendTestEmail,
+  sendGiftNotificationEmail,
+  sendTestEmail,
+  sendEmail,
 };

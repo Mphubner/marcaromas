@@ -12,3 +12,18 @@ export const supabase = supabaseUrl && supabaseKey
     : null;
 
 export const STORAGE_BUCKET = 'product-images';
+
+export const listFiles = async (bucket, path = '') => {
+    if (!supabase) return [];
+
+    const { data, error } = await supabase.storage
+        .from(bucket)
+        .list(path, {
+            limit: 100,
+            offset: 0,
+            sortBy: { column: 'name', order: 'asc' },
+        });
+
+    if (error) throw error;
+    return data;
+};
