@@ -16,7 +16,7 @@ import {
   bulkUpdateFeatured,
 } from '../controllers/product.controller.js';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
-import { authMiddleware } from '../middlewares/authMiddleware.js';
+
 import { adminMiddleware } from '../middlewares/adminMiddleware.js';
 import { cacheMiddleware } from '../middleware/cache.js';
 
