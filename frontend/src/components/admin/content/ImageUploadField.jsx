@@ -61,13 +61,13 @@ export default function ImageUploadField({ value, onChange, label = "Image" }) {
             {preview ? (
                 <div className="relative">
                     <img
-                        src={preview.startsWith('http') || preview.startsWith('/') ? preview : `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${preview}`}
+                        src={preview.startsWith('http') || preview.startsWith('/') ? preview : `${api.defaults.baseURL}${preview}`}
                         alt="Preview"
                         className="w-full h-48 object-cover rounded-lg border"
                         onError={(e) => {
                             // Fallback if relative path fails (e.g. during preview of local file)
                             if (!preview.startsWith('data:')) {
-                                e.target.src = `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}${preview}`;
+                                e.target.src = `${api.defaults.baseURL}${preview}`;
                             }
                         }}
                     />
