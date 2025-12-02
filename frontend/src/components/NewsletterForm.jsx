@@ -27,7 +27,7 @@ export default function NewsletterForm() {
     setLoading(true);
 
     try {
-      await api.post('/api/newsletter', formData);
+      await api.post('/newsletter', formData);
       toast.success('Inscrito com sucesso! Verifique seu e-mail.');
       setFormData({ name: '', email: '' });
     } catch (err) {

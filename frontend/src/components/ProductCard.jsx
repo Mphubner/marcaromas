@@ -26,7 +26,7 @@ export default function ProductCard({ product }) {
     setLoading(true);
 
     try {
-      await api.post('/api/cart/items', { productId: product.id, quantity: 1 });
+      await api.post('/cart/items', { productId: product.id, quantity: 1 });
       queryClient.invalidateQueries(['cart']);
       if (cartCtx?.refresh) cartCtx.refresh();
       toast.success('Produto adicionado ao carrinho!');

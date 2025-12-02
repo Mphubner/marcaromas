@@ -100,33 +100,33 @@ app.use(passport.initialize());
 // ----------------------
 // 🛣️ ROTAS PRINCIPAIS
 // ----------------------
-app.use("/api/auth", authLimiter, authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/subscriptions", subscriptionRoutes);
-app.use("/api/payment", paymentRoutes);
+app.use("/auth", authLimiter, authRoutes);
+app.use("/products", productRoutes);
+app.use("/cart", cartRoutes);
+app.use("/orders", orderRoutes);
+app.use("/dashboard", dashboardRoutes);
+app.use("/subscriptions", subscriptionRoutes);
+app.use("/payment", paymentRoutes);
 
 // ----------------------
 // 📄 ROTAS DE CONTEÚDO E PÁGINA
 // ----------------------
-app.use("/api/page-settings", pageRoutes);
-app.use("/api/plans", planRoutes);
-app.use("/api/preferences", preferencesRoutes);
-app.use("/api/gifts", giftRoutes);
-app.use("/api/page-settings", pageSettingsRoutes);
-app.use("/api/boxes", boxRoutes);
-app.get("/api/current-box", getCurrentBox);
-app.use("/api/reviews", reviewRoutes);
+app.use("/page-settings", pageRoutes);
+app.use("/plans", planRoutes);
+app.use("/preferences", preferencesRoutes);
+app.use("/gifts", giftRoutes);
+app.use("/page-settings", pageSettingsRoutes);
+app.use("/boxes", boxRoutes);
+app.get("/current-box", getCurrentBox);
+app.use("/reviews", reviewRoutes);
 
 // Store - unified products + boxes for public
-app.use('/api', storeRoutes);
+app.use('/', storeRoutes);
 
 // ----------------------
 // 🧪 TESTE E MIDDLEWARE
 // ----------------------
-app.get("/api", (req, res) =>
+app.get("/", (req, res) =>
   res.json({
     ok: true,
     env: process.env.PAYMENT_GATEWAY || "mercadopago",
@@ -135,25 +135,25 @@ app.get("/api", (req, res) =>
   })
 );
 
-app.use("/api/contact", contactRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/address", addressRoutes);
-app.use("/api/coupons", couponRoutes);
-app.use("/api/melhor-envio", melhorEnvioRoutes);
-app.use("/api/health", healthRoutes);
-app.use("/api/referrals", referralsRoutes);
-app.use("/api/admin/referrals", adminReferralsRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/uploads", uploadRoutes);
-app.use("/api/logs", logsRoutes);
-app.use("/api/settings", settingsRoutes);
-app.use("/api/content", contentRoutes);
-app.use("/api/config", configRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/customers", customerRoutes);
-app.use("/api/content-versions", contentVersionRoutes);
-app.use("/api/achievement", achievementRoutes);
+app.use("/contact", contactRoutes);
+app.use("/wishlist", wishlistRoutes);
+app.use("/users", userRoutes);
+app.use("/address", addressRoutes);
+app.use("/coupons", couponRoutes);
+app.use("/melhor-envio", melhorEnvioRoutes);
+app.use("/health", healthRoutes);
+app.use("/referrals", referralsRoutes);
+app.use("/admin/referrals", adminReferralsRoutes);
+app.use("/analytics", analyticsRoutes);
+app.use("/uploads", uploadRoutes);
+app.use("/logs", logsRoutes);
+app.use("/settings", settingsRoutes);
+app.use("/content", contentRoutes);
+app.use("/config", configRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/customers", customerRoutes);
+app.use("/content-versions", contentVersionRoutes);
+app.use("/achievement", achievementRoutes);
 
 app.use(errorHandler);
 

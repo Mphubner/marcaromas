@@ -49,7 +49,7 @@ export default function CheckoutPage() {
     async function fetchPlan() {
       if (!planId) return;
       try {
-        const res = await fetch(`${API_URL}/api/plans/${planId}`);
+        const res = await fetch(`${API_URL}/plans/${planId}`);
         if (!res.ok) throw new Error('Erro ao buscar plano');
         const data = await res.json();
         if (mounted) setPlan(data);
@@ -94,7 +94,7 @@ export default function CheckoutPage() {
     try {
       if (planId) {
         // Subscription flow: requires card tokenization
-        // Will use CardPaymentForm to get the token, then pass to /api/subscriptions
+        // Will use CardPaymentForm to get the token, then pass to /subscriptions
         setShowCardForm(true);
       } else {
         const items = cart.map(item => ({
@@ -109,7 +109,7 @@ export default function CheckoutPage() {
           email: user.email,
         };
 
-        const res = await fetch(`${API_URL}/api/payment/create-preference`, {
+        const res = await fetch(`${API_URL}/payment/create-preference`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

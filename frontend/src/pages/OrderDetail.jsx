@@ -43,7 +43,7 @@ export default function OrderDetail() {
 
     const handleDownloadInvoice = () => {
         // TODO: Implement invoice download
-        window.open(`/api/orders/${orderId}/invoice`, '_blank');
+        window.open(`/orders/${orderId}/invoice`, '_blank');
     };
 
     const handleTrackOrder = () => {
@@ -196,8 +196,8 @@ export default function OrderDetail() {
                                                 animate={{ scale: 1 }}
                                                 transition={{ delay: index * 0.1 }}
                                                 className={`w-12 h-12 rounded-full flex items-center justify-center z-10 flex-shrink-0 ${stage.completed
-                                                        ? 'bg-gradient-to-br from-[#8B7355] to-[#7A6548] text-white shadow-lg'
-                                                        : 'bg-gray-200 text-gray-400'
+                                                    ? 'bg-gradient-to-br from-[#8B7355] to-[#7A6548] text-white shadow-lg'
+                                                    : 'bg-gray-200 text-gray-400'
                                                     }`}
                                             >
                                                 <Icon className="w-6 h-6" />

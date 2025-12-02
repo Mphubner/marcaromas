@@ -66,7 +66,7 @@ export default function Home() {
   const { data: currentBox } = useQuery({
     queryKey: ['current-box'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/current-box`);
+      const response = await fetch(`${API_URL}/current-box`);
       if (!response.ok) throw new Error('Failed to fetch current box');
       return response.json();
     }
@@ -75,7 +75,7 @@ export default function Home() {
   const { data: reviews = [] } = useQuery({
     queryKey: ['reviews'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/reviews/approved`);
+      const response = await fetch(`${API_URL}/reviews/approved`);
       if (!response.ok) throw new Error('Failed to fetch reviews');
       return response.json();
     }

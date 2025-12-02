@@ -12,7 +12,7 @@ export const subscriptionService = {
   },
 
   getMySubscription: async () => {
-    const { data } = await api.get('/api/subscriptions/my-subscription');
+    const { data } = await api.get('/subscriptions/my-subscription');
     return data;
   },
 
@@ -26,17 +26,17 @@ export const subscriptionService = {
   },
 
   pauseSubscription: async (subscriptionId, reason) => {
-    const { data } = await api.post(`/api/subscriptions/${subscriptionId}/pause`, { reason });
+    const { data } = await api.post(`/subscriptions/${subscriptionId}/pause`, { reason });
     return data;
   },
 
   resumeSubscription: async (subscriptionId) => {
-    const { data } = await api.post(`/api/subscriptions/${subscriptionId}/resume`);
+    const { data } = await api.post(`/subscriptions/${subscriptionId}/resume`);
     return data;
   },
 
   changePlan: async (subscriptionId, newPlanId) => {
-    const { data } = await api.post(`/api/subscriptions/${subscriptionId}/change-plan`, { newPlanId });
+    const { data } = await api.post(`/subscriptions/${subscriptionId}/change-plan`, { newPlanId });
     return data;
   },
 };
