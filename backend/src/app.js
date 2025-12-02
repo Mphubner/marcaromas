@@ -48,6 +48,9 @@ import errorHandler from "./middlewares/errorHandler.js";
 dotenv.config();
 const app = express();
 
+// Trust proxy (required for rate limiting behind proxies like Railway/Cloudflare)
+app.set('trust proxy', 1);
+
 // CORS - Configure allowed origins
 const allowedOrigins = [
   'http://localhost:5173',
