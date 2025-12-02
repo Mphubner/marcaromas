@@ -37,6 +37,8 @@ import settingsRoutes from "./routes/settings.routes.js";
 import contentRoutes from "./routes/content.routes.js";
 import configRoutes from "./routes/config.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import customerRoutes from "./routes/customer.routes.js";
+import contentVersionRoutes from "./routes/contentVersion.routes.js";
 import { getCurrentBox } from "./controllers/box.controller.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
@@ -149,6 +151,8 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/content", contentRoutes);
 app.use("/api/config", configRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/content-versions", contentVersionRoutes);
 app.use("/api/achievement", achievementRoutes);
 
 app.use(errorHandler);
