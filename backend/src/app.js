@@ -34,6 +34,9 @@ import analyticsRoutes from "./routes/analytics.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import logsRoutes from "./routes/logs.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
+import contentRoutes from "./routes/content.routes.js";
+import configRoutes from "./routes/config.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 import { getCurrentBox } from "./controllers/box.controller.js";
 
 import errorHandler from "./middlewares/errorHandler.js";
@@ -143,6 +146,9 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/logs", logsRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/content", contentRoutes);
+app.use("/api/config", configRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/achievement", achievementRoutes);
 
 app.use(errorHandler);
