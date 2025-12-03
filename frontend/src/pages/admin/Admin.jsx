@@ -63,8 +63,8 @@ import ContentListPage from "./content/ContentListPage";
 import ContentCreatePage from "./content/ContentCreatePage";
 import ContentEditPage from "./content/ContentEditPage";
 import MediaPage from "./MediaPage";
-import SystemLogs from "@/pages/admin/logs/SystemLogs";
-import WebhookLogs from "@/pages/admin/logs/WebhookLogs";
+import SystemLogs from "@/pages/admin/logs/SystemLogs.jsx";
+import WebhookLogs from "@/pages/admin/logs/WebhookLogs.jsx";
 
 const navItems = [
   { path: "/admin", label: "Overview", icon: LayoutDashboard },
