@@ -3,8 +3,22 @@ import axios from 'axios';
 // Helper to sanitize API URL
 const getBaseUrl = () => {
   let url = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-  // Remove trailing /api or /api/
-  return url.replace(/\/api\/?$/, '');
+  console.log('[API] Raw VITE_API_URL:', url);
+
+  // Trim whitespace
+  url = url.trim();
+
+  // Remove trailing /api or /api/ (case insensitive)
+  // Also handles multiple occurrences like /api/api just in case
+  while (/\/api\/?$/i.test(url)) {
+    url = url.replace(/\/api\/?$/i, '');
+  }
+
+  // Ensure no trailing slash
+  url = url.replace(/\/$/, '');
+
+  console.log('[API] Sanitized API_URL:', url);
+  return url;
 };
 
 export const API_URL = getBaseUrl();
