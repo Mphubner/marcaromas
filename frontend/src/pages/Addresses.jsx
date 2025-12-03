@@ -357,6 +357,9 @@ export default function Addresses() {
                             <DialogTitle>
                                 {editingAddress ? 'Editar Endereço' : 'Novo Endereço'}
                             </DialogTitle>
+                            <p className="text-sm text-gray-600 mt-2">
+                                {editingAddress ? 'Atualize as informações do endereço' : 'Preencha os dados do novo endereço de entrega'}
+                            </p>
                         </DialogHeader>
 
                         <form onSubmit={handleSubmit} className="space-y-6 py-4">

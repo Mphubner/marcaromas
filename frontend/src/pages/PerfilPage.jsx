@@ -115,7 +115,13 @@ export default function PerfilPage() {
 
   const handleSubmitProfile = (e) => {
     e.preventDefault();
-    updateProfileMutation.mutate(formData);
+    // Map birthDate to birthdate for backend
+    const payload = {
+      ...formData,
+      birthdate: formData.birthDate
+    };
+    delete payload.birthDate; // Remove the camelCase version
+    updateProfileMutation.mutate(payload);
   };
 
   const handleSubmitPassword = (e) => {

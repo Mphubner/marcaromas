@@ -143,7 +143,7 @@ app.get("/", (req, res) =>
 app.use("/contact", contactRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/users", userRoutes);
-app.use("/address", addressRoutes);
+app.use("/addresses", addressRoutes);
 app.use("/coupons", couponRoutes);
 app.use("/melhor-envio", melhorEnvioRoutes);
 app.use("/health", healthRoutes);

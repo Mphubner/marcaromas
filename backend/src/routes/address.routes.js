@@ -14,11 +14,11 @@ const router = express.Router();
 // All routes require authentication
 router.use(authMiddleware);
 
-router.get('/', getMyAddresses);
+router.get('/my', getMyAddresses);
 router.get('/:id', getAddressById);
 router.post('/', createAddress);
-router.patch('/:id', updateAddress);
+router.put('/:id', updateAddress);
 router.delete('/:id', deleteAddress);
-router.post('/:id/set-default', setDefaultAddress);
+router.put('/:id/set-default', setDefaultAddress);
 
 export default router;
