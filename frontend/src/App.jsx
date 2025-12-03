@@ -35,6 +35,7 @@ const Indicacoes = React.lazy(() => import("./pages/Indicacoes.jsx"));
 const PerfilAromas = React.lazy(() => import("./pages/PerfilAromas.jsx"));
 const ConteudoExclusivo = React.lazy(() => import("./pages/ConteudoExclusivo.jsx"));
 const ExclusiveContentPost = React.lazy(() => import("./pages/ExclusiveContentPost.jsx"));
+const Addresses = React.lazy(() => import("./pages/Addresses.jsx"));
 const Admin = React.lazy(() => import("./pages/admin/Admin.jsx"));
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -100,6 +101,7 @@ export default function App() {
                         <Route path="/perfil-aromas" element={<Layout><ProtectedRoute><PerfilAromas /></ProtectedRoute></Layout>} />
                         <Route path="/conteudo-exclusivo" element={<Layout><ProtectedRoute><ConteudoExclusivo /></ProtectedRoute></Layout>} />
                         <Route path="/conteudo-exclusivo/:slug" element={<Layout><ProtectedRoute><ExclusiveContentPost /></ProtectedRoute></Layout>} />
+                        <Route path="/enderecos" element={<Layout><ProtectedRoute><Addresses /></ProtectedRoute></Layout>} />
                         <Route path="/admin/*" element={<Layout><AdminRoute><Admin /></AdminRoute></Layout>} />
                       </Routes>
                     </Suspense>

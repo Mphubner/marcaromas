@@ -2,6 +2,8 @@ import express from 'express';
 import {
     getMyProfile,
     updateMyProfile,
+    updatePassword,
+    uploadAvatar,
     getAllUsersAdmin,
     getUserById,
     updateUser,
@@ -20,6 +22,8 @@ router.use(authMiddleware);
 
 router.get('/profile', getMyProfile);
 router.patch('/profile', updateMyProfile);
+router.post('/password', updatePassword);
+router.post('/avatar', uploadAvatar);
 
 router.get('/scent-profile', getScentProfile);
 router.post('/scent-profile', updateScentProfile);

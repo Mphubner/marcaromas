@@ -14,16 +14,19 @@ export const getMyProfile = async (req, res, next) => {
 // Atualizar o perfil do usuário logado
 export const updateMyProfile = async (req, res, next) => {
   try {
-    const { name, email, password, address, phone, birthdate } = req.body;
+    const { name, email, password, address, phone, birthdate, cpf, bio, avatar } = req.body;
     const userId = req.user.id;
 
     const dataToUpdate = {};
 
-    if (name) dataToUpdate.name = name;
-    if (email) dataToUpdate.email = email;
-    if (phone) dataToUpdate.phone = phone;
-    if (address) dataToUpdate.address = address;
-    if (birthdate) dataToUpdate.birthdate = new Date(birthdate);
+    if (name !== undefined) dataToUpdate.name = name;
+    if (email !== undefined) dataToUpdate.email = email;
+    if (phone !== undefined) dataToUpdate.phone = phone;
+    if (cpf !== undefined) dataToUpdate.cpf = cpf;
+    if (address !== undefined) dataToUpdate.address = address;
+    if (bio !== undefined) dataToUpdate.notes = bio; // Using 'notes' field for bio
+    if (avatar !== undefined) dataToUpdate.avatar = avatar;
+    if (birthdate !== undefined) dataToUpdate.birthdate = birthdate ? new Date(birthdate) : null;
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -42,6 +45,73 @@ export const updateMyProfile = async (req, res, next) => {
     if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
       return res.status(409).json({ message: 'Este email já está em uso.' });
     }
+    if (error.code === 'P2002' && error.meta?.target?.includes('cpf')) {
+      return res.status(409).json({ message: 'Este CPF já está em uso.' });
+    }
+    next(error);
+  }
+};
+
+// Atualizar senha do usuário logado
+export const updatePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Senha atual e nova senha são obrigatórias' });
+    }
+
+    // Buscar usuário com senha
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    // Verificar se é login com Google (não tem senha)
+    if (!user.password) {
+      return res.status(400).json({ message: 'Usuários autenticados com Google não podem alterar a senha aqui' });
+    }
+
+    // Verificar senha atual
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Senha atual incorreta' });
+    }
+
+    // Hash da nova senha
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Atualizar senha
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Upload de avatar (usando o mesmo sistema de upload de imagens)
+export const uploadAvatar = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const avatarUrl = req.body.avatarUrl; // URL retornada pelo upload de imagem
+
+    if (!avatarUrl) {
+      return res.status(400).json({ message: 'URL do avatar é obrigatório' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarUrl },
+    });
+
+    const { password: _, ...profile } = updatedUser;
+    res.json(profile);
+  } catch (error) {
     next(error);
   }
 };

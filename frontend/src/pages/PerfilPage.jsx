@@ -72,8 +72,8 @@ export default function PerfilPage() {
         email: profile.email || '',
         phone: profile.phone || '',
         cpf: profile.cpf || '',
-        birthDate: profile.birthDate || '',
-        bio: profile.bio || ''
+        birthDate: profile.birthdate ? new Date(profile.birthdate).toISOString().split('T')[0] : '',
+        bio: profile.notes || '' // Map notes field to bio
       });
     }
   }, [profile]);
@@ -138,8 +138,14 @@ export default function PerfilPage() {
   };
 
   const handleAvatarUpload = async (file) => {
-    // TODO: Implement avatar upload to server
-    toast.success('Foto de perfil atualizada!');
+    try {
+      const updatedUser = await userService.uploadAvatar(file);
+      queryClient.invalidateQueries(['my-profile']);
+      setUser(updatedUser);
+      toast.success('Foto de perfil atualizada!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Erro ao atualizar foto');
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -406,15 +412,17 @@ export default function PerfilPage() {
       icon: MapPin,
       content: (
         <ClientCard>
-          <p className="text-center text-gray-600 py-8">
-            Gerenciamento de endereços será implementado em breve.
-            <br />
-            Por enquanto, você pode editar seu endereço principal nas configurações gerais.
-          </p>
-          <ClientButton variant="outline" className="mx-auto">
-            <MapPin className="w-4 h-4 mr-2" />
-            Adicionar Novo Endereço
-          </ClientButton>
+          <div className="text-center py-8">
+            <MapPin className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-bold text-[#2C2419] mb-2">Gerencie seus endereços</h3>
+            <p className="text-gray-600 mb-6">
+              Adicione, edite ou remova endereços de entrega
+            </p>
+            <ClientButton onClick={() => navigate('/enderecos')}>
+              <MapPin className="w-4 h-4 mr-2" />
+              Ir para Endereços
+            </ClientButton>
+          </div>
         </ClientCard>
       )
     },

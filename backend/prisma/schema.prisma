@@ -26,7 +26,8 @@ model User {
   address     Json? // {street, number, complement, city, state, zip}
   status      String    @default("active") // active, inactive, blocked
   lastLoginAt DateTime?
-  notes       String? // Admin notes
+  notes       String? // Admin notes or user bio
+  avatar      String? // Profile picture URL
 
 
   carts         Cart[]
