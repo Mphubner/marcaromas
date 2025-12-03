@@ -68,7 +68,9 @@ export default function UploadManager({ onSelect, selectMode = false }) {
     // Delete Mutation
     const deleteMutation = useMutation({
         mutationFn: async (filename) => {
-            await api.delete(`/uploads/${filename}`);
+            await api.delete(`/uploads/${filename}`, {
+                params: { folder: currentPath }
+            });
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['files', currentPath]);
@@ -159,6 +161,7 @@ export default function UploadManager({ onSelect, selectMode = false }) {
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Upload de Arquivos</DialogTitle>
+                                    <p className="text-sm text-gray-500">Selecione ou arraste imagens para fazer upload.</p>
                                 </DialogHeader>
                                 <div
                                     {...getRootProps()}

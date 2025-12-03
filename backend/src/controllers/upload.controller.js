@@ -262,10 +262,20 @@ export default {
   deleteFile: async (req, res, next) => {
     try {
       const { filename } = req.params;
+      const { folder } = req.query; // Get folder from query
+
       if (!filename) return res.status(400).json({ error: 'filename required' });
 
-      const safe = path.basename(filename);
-      const mainFile = path.join(UPLOADS_DIR, safe);
+      const safeFilename = path.basename(filename);
+      // Construct path with folder if provided
+      const targetDir = folder ? path.join(UPLOADS_DIR, folder) : UPLOADS_DIR;
+
+      // Security check to ensure we stay within uploads dir
+      if (!targetDir.startsWith(UPLOADS_DIR)) {
+        return res.status(403).json({ error: 'Invalid folder path' });
+      }
+
+      const mainFile = path.join(targetDir, safeFilename);
 
       if (!fs.existsSync(mainFile)) {
         return res.status(404).json({ error: 'file not found' });
@@ -275,7 +285,7 @@ export default {
       await fs.promises.unlink(mainFile);
 
       // Try to delete related files (medium, thumbnail, and different formats)
-      const baseNameMatch = safe.match(/^(.+?)(_\d+)(\.\w+)$/);
+      const baseNameMatch = safeFilename.match(/^(.+?)(_\d+)(\.\w+)$/);
       if (baseNameMatch) {
         const [, baseName, timestamp] = baseNameMatch;
         const relatedFiles = [
@@ -286,7 +296,7 @@ export default {
         ];
 
         for (const relatedFile of relatedFiles) {
-          const relatedPath = path.join(UPLOADS_DIR, relatedFile);
+          const relatedPath = path.join(targetDir, relatedFile);
           if (fs.existsSync(relatedPath) && relatedPath !== mainFile) {
             try {
               await fs.promises.unlink(relatedPath);
