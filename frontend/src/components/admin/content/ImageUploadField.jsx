@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Upload, X, Image as ImageIcon, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import UploadManager from '../../media/UploadManager.jsx';
+import UploadManager from '@/components/admin/media/UploadManager.jsx';
 import api from '../../../lib/api';
 
 export default function ImageUploadField({ value, onChange, label = "Image" }) {
