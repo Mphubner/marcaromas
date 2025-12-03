@@ -18,7 +18,8 @@ import {
   FileText,
   Menu,
   X,
-  Image
+  Image,
+  Activity
 } from "lucide-react";
 
 const ImageIcon = Image;
