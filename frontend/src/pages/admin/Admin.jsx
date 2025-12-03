@@ -17,7 +17,8 @@ import {
   LogOut,
   FileText,
   Menu,
-  X
+  X,
+  Image as ImageIcon
 } from "lucide-react";
 
 import OverviewDashboard from "./dashboard/OverviewDashboard";

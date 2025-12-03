@@ -22,7 +22,6 @@ export function CartProvider({ children }) {
       console.log('CartContext: Fetching cart from API...');
       const { data } = await api.get('/cart');
       console.log('CartContext: Fetch cart API response:', data);
-      console.log('CartContext: data.items:', data.items);
       setCart(data || []);
     } catch (err) {
       console.error('CartContext: Error fetching cart:', err);

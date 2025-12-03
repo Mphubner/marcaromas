@@ -158,7 +158,7 @@ app.use("/config", configRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/customers", customerRoutes);
 app.use("/content-versions", contentVersionRoutes);
-app.use("/achievement", achievementRoutes);
+app.use("/achievements", achievementRoutes);
 
 app.use(errorHandler);
 
