@@ -18,8 +18,10 @@ import {
   FileText,
   Menu,
   X,
-  Image as ImageIcon
+  Image
 } from "lucide-react";
+
+const ImageIcon = Image;
 
 import OverviewDashboard from "./dashboard/OverviewDashboard";
 import AnalyticsDashboard from "./analytics/AnalyticsDashboard";
