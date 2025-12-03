@@ -76,6 +76,7 @@ tmp/
 
 # Database dumps
 *.sql
+!backend/prisma/migrations/**/*.sql
 *.dump
 
 # Backup files
